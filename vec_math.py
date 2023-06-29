@@ -46,7 +46,8 @@ def classify_one_sentence(df, m, sentence, idx=None):
     for index, row in df.iterrows():
         if index == idx: # if test question was from the same train dataframe
             continue
-        similarity = cosine_sim_scipy(get_average_vector(m, row['question']), get_average_vector(m, sentence))
+        similarity = cosine_sim_scipy(m.get_sentence_vector(row['question']), m.get_sentence_vector(sentence))
+        # similarity = cosine_sim_scipy(get_average_vector(m, row['question']), get_average_vector(m, sentence))
         if similarity > max_similarity:
             max_similarity = similarity
             question_max = row['question']
@@ -58,6 +59,44 @@ def get_classification_error(df, m, x_test):
     number_right = 0
     for idx, question, true_class in x_test:
         classified_class, max_similar_question = classify_one_sentence(df, m, question, idx=int(idx))
+        if classified_class == int(true_class):
+            number_right += 1
+    return 1.0 - number_right / x_test.shape[0]
+
+
+def get_class2questions_dict(df):
+    class2question = {}
+    for index, row in df.iterrows():
+        if row['class'] not in class2question:
+            class2question[row['class']] = []
+        class2question[row['class']].append(row['question'])
+    return class2question
+
+
+def classify_one_sentence_based_on_average(m, class2question_dict, sentence):
+    class_of_max_similarity = 0
+    max_similarity = -np.inf
+    v_shape = get_average_vector(m, "dummy").shape
+    for class_id in class2question_dict:
+        vectors_in_tr_data = np.zeros(v_shape)
+        c = 0
+        for q in class2question_dict[class_id]:
+            if q != sentence:
+                vectors_in_tr_data = vectors_in_tr_data + m.get_sentence_vector(q)
+                c += 1
+        average_tr_vector = vectors_in_tr_data / c
+
+        similarity = cosine_sim_scipy(average_tr_vector, m.get_sentence_vector(sentence))
+        if similarity > max_similarity:
+            max_similarity = similarity
+            class_of_max_similarity = class_id
+    return class_of_max_similarity
+
+
+def get_classification_error_with_averages(class2questions_dict, m, x_test):
+    number_right = 0
+    for idx, question, true_class in x_test:
+        classified_class = classify_one_sentence_based_on_average(m, class2questions_dict, question)
         if classified_class == int(true_class):
             number_right += 1
     return 1.0 - number_right / x_test.shape[0]
