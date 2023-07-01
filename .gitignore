@@ -1,0 +1,11 @@
+.idea/.gitignore
+.idea/misc.xml
+.idea/modules.xml
+.idea/my_src.iml
+.idea/vcs.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
+__pycache__/vec_math.cpython-310.pyc
+models/cc.cs.300.bin.gz
+models/fil9.bin
+models/cc.cs.300.bin
