@@ -46,8 +46,10 @@ def classify_one_sentence(df, m, sentence, idx=None):
     for index, row in df.iterrows():
         if index == idx: # if test question was from the same train dataframe
             continue
+        
         similarity = cosine_sim_scipy(m.get_sentence_vector(row['question']), m.get_sentence_vector(sentence))
         # similarity = cosine_sim_scipy(get_average_vector(m, row['question']), get_average_vector(m, sentence))
+
         if similarity > max_similarity:
             max_similarity = similarity
             question_max = row['question']
