@@ -149,7 +149,10 @@ class FAQ_adapted:
 
     def mean_match_test(self, verb=False, show_cm=False, show_time=2.0):
         # Determines question class by comparing it with mean database and computes classification accuracy
+        # print(self.db.shape)
+        print(self.mean_db.shape)
         cm = self.db @ self.mean_db.T
+        # print(cm.shape)
         am = np.argmax(cm, axis=1)
         preds = am
         gts = self.questions["class"].to_numpy(dtype=int)
@@ -288,9 +291,65 @@ class FAQ_adapted:
                 # print("Q:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
                 # print("Q_argmax:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
         
-        if save_path:
+        if save_path is not None:
             json_data = json.dumps(dict_question2classes)
             with open(save_path, "w") as outfile:
                 outfile.write(json_data)
         
         return dict_question2classes
+
+    def get_most_confused_questions(self, cos_sim_threshold: float, save_path=None):
+        # With mean-match
+        cm = self.db @ self.mean_db.T
+        print(cm.shape) # (questions, classes)
+        masked_with_thresh = cm > cos_sim_threshold
+
+        # For each question: find the number of mean vectors that have larger cosine
+        # similarity with given question than threshold.
+        n_of_similar_questions_to_question = masked_with_thresh.sum(axis=1)
+        print(n_of_similar_questions_to_question.shape)
+
+        # Find indices of questions that are close to being missclassified.
+        # Questions that have multiple mean vectors that yield cosine > threshold.
+        idxs_close_miss = np.where(n_of_similar_questions_to_question > 1)
+
+        for i in idxs_close_miss:
+            print(self.questions["question"][i])
+
+
+    def get_most_misclassified_class_pairs(self, save_path=None, n_of_common_misses=3):
+        cm = self.db @ self.mean_db.T
+        am = np.argmax(cm, axis=1)
+
+        class_to_class = {}
+
+        preds = am
+        gts = self.questions["class"].to_numpy(dtype=int)
+        hits = preds == gts
+        for i, b in enumerate(hits):
+            if not b:
+                # print(f"{self.questions['question'][i]} : Class {am[i]}")
+                if (self.questions['class'][i], am[i]) in class_to_class:
+                    class_to_class[(self.questions['class'][i], am[i])] += 1
+                elif (am[i], self.questions['class'][i]) in class_to_class:
+                    class_to_class[(am[i], self.questions['class'][i])] += 1
+                else:
+                    class_to_class[(self.questions['class'][i], am[i])] = 1
+                
+
+        for pair in class_to_class:
+            if class_to_class[pair] >= n_of_common_misses:
+                print(pair, class_to_class[pair]) # class pair, number of common misses
+
+        new_cl2cl = [str(k[0])+":"+str(k[1]) for k, v in class_to_class.items() if v >= n_of_common_misses]
+        print(new_cl2cl)
+
+        if save_path:
+            with open(save_path, "w") as outfile:
+                json.dump(new_cl2cl, outfile)
+
+        
+
+
+
+
