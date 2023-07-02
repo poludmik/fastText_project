@@ -9,3 +9,6 @@ __pycache__/vec_math.cpython-310.pyc
 models/cc.cs.300.bin.gz
 models/fil9.bin
 models/cc.cs.300.bin
+__pycache__/faq50_adapted.cpython-310.pyc
+.gitignore
+__pycache__/faq50.cpython-310.pyc

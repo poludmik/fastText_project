@@ -119,12 +119,12 @@ class FAQ_adapted:
         cm = self.db @ self.db.T
         am = np.argmax(cm, axis=1)
 
-        for i in range(am.shape[0]):
-            if am[i] != i:
-                print("Ambiguous match:")
-                print(self.questions["question"][i], i, self.questions["class"][i])
-                print(self.questions["question"][am[i]], am[i], self.questions["class"][am[i]])
-                print()
+        # for i in range(am.shape[0]):
+        #     if am[i] != i:
+        #         print("Ambiguous match:")
+        #         print(self.questions["question"][i], i, self.questions["class"][i])
+        #         print(self.questions["question"][am[i]], am[i], self.questions["class"][am[i]])
+        #         print()
 
         def onclick(event):
             if event.xdata is None or event.ydata is None:
@@ -146,30 +146,6 @@ class FAQ_adapted:
             plt.gca().add_patch(Rectangle((ul, ul), edge, edge, linewidth=1, edgecolor='r', facecolor='none'))
         plt.title("Confusion matrix for all question matches")
         plt.show()
-
-    def get_same_question_different_answer_pairs(self, save_path=None):
-        cm = self.db @ self.db.T
-        am = np.argmax(cm, axis=1)
-        dict_question2classes = {}
-
-        for i in range(am.shape[0]):
-            if am[i] != i:
-                if self.questions["question"][i] not in dict_question2classes:
-                    dict_question2classes[self.questions["question"][i]] = []
-                if str(self.questions["class"][i]) not in dict_question2classes[self.questions["question"][i]]:
-                    dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][i]))
-                if str(self.questions["class"][am[i]]) not in dict_question2classes[self.questions["question"][i]]:
-                    dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][am[i]]))
-                # print("Same question with different classes:")
-                # print("Q:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
-                # print("Q_argmax:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
-        
-        if save_path:
-            json_data = json.dumps(dict_question2classes)
-            with open(save_path, "w") as outfile:
-                outfile.write(json_data)
-        
-        return dict_question2classes
 
     def mean_match_test(self, verb=False, show_cm=False, show_time=2.0):
         # Determines question class by comparing it with mean database and computes classification accuracy
@@ -292,3 +268,29 @@ class FAQ_adapted:
         ans = self.answers['answer'][self.identify_direct_answer(question)]
         #print(f"Answer: {ans}")
         return ans
+
+    # -------------------- Added --------------------
+
+    def get_same_question_different_answer_pairs(self, save_path=None):
+        cm = self.db @ self.db.T
+        am = np.argmax(cm, axis=1)
+        dict_question2classes = {}
+
+        for i in range(am.shape[0]):
+            if am[i] != i:
+                if self.questions["question"][i] not in dict_question2classes:
+                    dict_question2classes[self.questions["question"][i]] = []
+                if str(self.questions["class"][i]) not in dict_question2classes[self.questions["question"][i]]:
+                    dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][i]))
+                if str(self.questions["class"][am[i]]) not in dict_question2classes[self.questions["question"][i]]:
+                    dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][am[i]]))
+                # print("Same question with different classes:")
+                # print("Q:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
+                # print("Q_argmax:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
+        
+        if save_path:
+            json_data = json.dumps(dict_question2classes)
+            with open(save_path, "w") as outfile:
+                outfile.write(json_data)
+        
+        return dict_question2classes
