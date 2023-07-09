@@ -14,10 +14,15 @@ from nltk import word_tokenize
 from nltk.corpus import wordnet
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-nltk.download('wordnet')
-lmtzr = WordNetLemmatizer()
-stem = PorterStemmer()
+# nltk.download('wordnet')
+# lmtzr = WordNetLemmatizer()
+# stem = PorterStemmer()
 
+import simplemma
+from simplemma import simple_tokenizer
+
+
+  
 
 class TFIDF_Classifier:
     def __init__(self, questions_path):
@@ -25,8 +30,9 @@ class TFIDF_Classifier:
         self.structured_list = None
         self.TFIDF_matrix = None
         self.feature_names = None
-        self.stem_method = lmtzr.lemmatize
-        # self.stem_method = stem.stem
+        def lemmatize_cs(word, language="cs"):
+            return simplemma.lemmatize(word, lang=language)
+        self.lemmatize_cs_w = lambda w: lemmatize_cs(w)
 
     def structure_data(self, test_data_percent=None):
         i = 0
@@ -44,7 +50,7 @@ class TFIDF_Classifier:
         self.structured_list = ["" for _ in range(df['class'].max() + 1)]
 
         for index, row in df_subset.iterrows():
-            lemmatized = [self.stem_method(word) for word in word_tokenize(row['question'])]
+            lemmatized = [self.lemmatize_cs_w(word) for word in simple_tokenizer(row['question'])]
             self.structured_list[int(row['class'])] += " " + ' '.join(lemmatized)
 
         test_data = []
@@ -59,18 +65,18 @@ class TFIDF_Classifier:
         self.feature_names = vectorizer.get_feature_names_out()
         self.TFIDF_matrix = X
         print("TFIDF matrix shape:", X.shape)
-    
+
     def classify_sentence(self, sentence):
         max_p = -np.inf
         classified_c = None
         for c in range(self.TFIDF_matrix.shape[0]): # classes
             p = 0
-            for word in word_tokenize(sentence):
-                w = self.stem_method(word)
+            for word in simple_tokenizer(sentence):
+                w = self.lemmatize_cs_w(word)
                 if w not in self.feature_names:
                     continue
                 p += self.TFIDF_matrix[c, np.where(self.feature_names == w)[0][0]]
-            p /= len(word_tokenize(sentence))
+            p /= len(simple_tokenizer(sentence))
             if p > max_p:
                 max_p = p
                 classified_c = c

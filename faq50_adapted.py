@@ -11,7 +11,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import json
 import os
-#from nltk.tokenize import word_tokenize
+
+from cs_lemmatizer import *
 
 
 def extract_word_probs(model_path: str, corpus_size: int = 4.1e9):
@@ -30,9 +31,9 @@ def extract_word_probs(model_path: str, corpus_size: int = 4.1e9):
     return probs_path
 
 
-class FAQ_adapted:
+class FAQ:
     def __init__(
-            self,
+            self, 
             model, 
             questions_path, 
             answers_path=None,
@@ -42,7 +43,7 @@ class FAQ_adapted:
         ):
         self.model = model
         self.answers = None
-        self.sentence_embedding = self.default_sentence_embedding
+        self.sentence_embedding = self.mean_sentence_embedding
         self.word_probs = probs
         self.alpha = alpha
 
@@ -52,12 +53,13 @@ class FAQ_adapted:
             self.get_w_vec = self.model.get_word_vector
 
         if questions_path.split(".")[1] == "xlsx":
+            
             self.questions = pd.read_excel(questions_path)
         elif questions_path.split(".")[1] == "csv":
             self.questions = pd.read_csv(questions_path, sep="\t")
         else:
             raise "Unsupported data file"
-
+        
         if answers_path and questions_path.split(".")[1] == "xlsx":
             self.answers = pd.read_excel(answers_path)
         elif answers_path and questions_path.split(".")[1] == "csv":
@@ -98,19 +100,21 @@ class FAQ_adapted:
 
     def weighted_sentence_embedding(self, sentence):
         # Computes weighted sentence embedding acoording to: https://openreview.net/pdf?id=SyK00v5xx
+        words = [LMTZR.lemmatize_cs(w) for w in LMTZR.tokenize(sentence)]
+
         def word_probability(word):
             if word in self.word_probs.keys():
                 return self.word_probs[word]
             return 0.0
 
-        words = sentence.lower().replace('\n', ' ').split()
         #words = word_tokenize(sentence)
         wes = np.array([self.get_w_vec(w) for w in words])
         probs = np.array([word_probability(w) for w in words])[:, np.newaxis]
         wes /= np.linalg.norm(wes, axis=1)[:, np.newaxis] + 1e-9
-        wes *= self.alpha / (self.alpha + probs)
+        wes *= 1 / (self.alpha + probs)
+        # wes *= probs  # for probabilities of words from answer dataset
         se = np.mean(wes, axis=0)
-        return se/np.linalg.norm(se)
+        return se / (np.linalg.norm(se) + 1e-9)
 
     def total_confusion(self):
         # Shows a heatmap of cosine similarities of all question pairs
@@ -118,7 +122,6 @@ class FAQ_adapted:
         # Click a pixel to print out aditional info about the matching question pair
         cm = self.db @ self.db.T
         am = np.argmax(cm, axis=1)
-
         # for i in range(am.shape[0]):
         #     if am[i] != i:
         #         print("Ambiguous match:")
@@ -149,10 +152,7 @@ class FAQ_adapted:
 
     def mean_match_test(self, verb=False, show_cm=False, show_time=2.0):
         # Determines question class by comparing it with mean database and computes classification accuracy
-        # print(self.db.shape)
-        print(self.mean_db.shape)
         cm = self.db @ self.mean_db.T
-        # print(cm.shape)
         am = np.argmax(cm, axis=1)
         preds = am
         gts = self.questions["class"].to_numpy(dtype=int)
@@ -170,7 +170,7 @@ class FAQ_adapted:
         if show_cm:
             cm = confusion_matrix(gts, preds)
             fig = plt.figure(figsize=(10, 7))
-            sn.heatmap(cm, annot=True)
+            sn.heatmap(cm, annot=False)
             plt.title("Mean matching confusion matrix")
             plt.xlabel("Prediction")
             plt.ylabel("True class")
@@ -200,7 +200,7 @@ class FAQ_adapted:
         if show_cm:
             cm = confusion_matrix(cls_ids, cls_ids[am])
             fig = plt.figure(figsize=(10, 7))
-            sn.heatmap(cm, annot=True)
+            sn.heatmap(cm, annot=False)
             plt.title("Question cross-matching confusion matrix")
             plt.xlabel("Prediction")
             plt.ylabel("True class")
