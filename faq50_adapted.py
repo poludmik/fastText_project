@@ -316,7 +316,6 @@ class FAQ:
         for i in idxs_close_miss:
             print(self.questions["question"][i])
 
-
     def get_most_misclassified_class_pairs(self, save_path=None, n_of_common_misses=3):
         cm = self.db @ self.mean_db.T
         am = np.argmax(cm, axis=1)
@@ -348,8 +347,38 @@ class FAQ:
             with open(save_path, "w") as outfile:
                 json.dump(new_cl2cl, outfile)
 
-        
+    def mean_match_test_disjunctive(self):
+        # does not include the tested question into "training data"
+        n_got_right = 0
+        n_got_second_right = 0
+        n_got_third_right = 0
+        for i, cls in enumerate(self.questions["class"].unique()):
+            # i == cls
+            for index, row in self.questions[self.questions["class"] == cls].iterrows():
+                tmp_mean_db = self.mean_db
+                tmp_mean_vec = np.zeros(tmp_mean_db.shape[1])
+                c = 0
+                for index_m, row_m in self.questions[self.questions["class"] == cls].iterrows():
+                    if index == index_m:
+                        continue
+                    tmp_mean_vec += self.sentence_embedding(row_m["question"])
+                    c += 1
+                tmp_mean_vec /= c
 
+                tmp_mean_db[i] = tmp_mean_vec
+                cm = self.db[index] @ tmp_mean_db.T
+                sorted_indexes = np.argsort(cm)
+                pred = sorted_indexes[-1]
+
+                if pred == cls:
+                    n_got_right += 1
+                elif sorted_indexes[-2] == cls:
+                    n_got_second_right += 1
+                elif sorted_indexes[-3] == cls:
+                    n_got_third_right += 1
+        
+        n_of_questions = len(self.questions.index)
+        return round(n_got_right / n_of_questions, 3), round(n_got_second_right / n_of_questions, 3),  round(n_got_third_right / n_of_questions, 3)
 
 
 

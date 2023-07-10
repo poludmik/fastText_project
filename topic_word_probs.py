@@ -3,15 +3,11 @@ Adapted from Adam Jirkovsky - jirkoada.
 """
 import pandas as pd
 import json
+import operator
+from collections import Counter
 
-import nltk
 from cs_lemmatizer import *
 
-from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.stem import PorterStemmer
-from nltk import word_tokenize
-from nltk.corpus import wordnet
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 # nltk.download('wordnet')
 # lmtzr = WordNetLemmatizer()
@@ -26,13 +22,13 @@ def remove_tags():
     ans_df.to_excel("Q78_answers_no_tags.xlsx")
 
 
-def count_word_probs_in_answers():
-    ans_df = pd.read_excel("upv_faq/Q78_answers_no_tags.xlsx")
+def count_word_probs_in_answers(path_to_corpus, path_to_save):
+    ans_df = pd.read_excel(path_to_corpus)
     corpus = ans_df['answer'].str.cat(sep="\n")
-    words = corpus.lower().split()
+    # words = corpus.lower().split()
 
-    # words = LMTZR.tokenize(corpus)
-    # words = [LMTZR.lemmatize_cs(w) for w in words]
+    words = LMTZR.tokenize(corpus)
+    words = [LMTZR.lemmatize_cs(w) for w in words]
     
     probs = {}
     for word in words:
@@ -43,13 +39,12 @@ def count_word_probs_in_answers():
             probs[word] = 1
     for key in probs.keys():
         probs[key] /= len(words)
-    #print(probs)
-    with open("upv_faq/Q78_answer_word_probs.json", "w") as f:
+    with open(path_to_save, "w") as f:
         json.dump(probs, f)
 
 
-def count_word_probs_in_questions():
-    ans_df = pd.read_excel("upv_faq/Q78_questions.xlsx")
+def count_word_probs_in_questions(path_to_questions, path_to_save):
+    ans_df = pd.read_excel(path_to_questions)
     corpus = ans_df['question'].str.cat(sep="\n")
     # words = corpus.lower().split()
     words = LMTZR.tokenize(corpus)
@@ -64,9 +59,18 @@ def count_word_probs_in_questions():
             probs[word] = 1
     for key in probs.keys():
         probs[key] /= len(words)
-    # print(probs)
-    with open("upv_faq/Q78_question_word_probs.json", "w") as f:
+    with open(path_to_save, "w") as f:
         json.dump(probs, f)
+
+
+def combine_dicts(a, b, save_path=None):
+    # return dict(a.items() + b.items() +
+    #     [(k, operator.add(a[k], b[k])) for k in set(b) & set(a)])
+    combined_dict = Counter(a) + Counter(b)
+    if save_path:
+        with open(save_path, "w") as f:
+            json.dump(combined_dict, f)
+    return combined_dict
 
 
 if __name__ == "__main__":
