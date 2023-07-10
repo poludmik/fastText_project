@@ -157,8 +157,13 @@ class FAQ:
         preds = am
         gts = self.questions["class"].to_numpy(dtype=int)
         hits = preds == gts
-
         acc = hits.mean()
+
+        sorted_indexes = np.argsort(cm, axis=1)
+        preds_second = sorted_indexes[:, -2]
+        hits_second = preds_second == gts
+        acc_second = hits_second.mean()
+
         #print(f"Mean match accuracy: {acc}")
 
         if not hits.all() and verb:
@@ -177,7 +182,7 @@ class FAQ:
             plt.draw()
             plt.pause(show_time)
             return acc, fig
-        return acc, None
+        return acc, acc_second
     
     def cross_match_test(self, verb=False, show_cm=False, show_time=2.0):
         # Computes cosine similarities of all question pairs
@@ -187,9 +192,12 @@ class FAQ:
         am = np.argsort(cm, axis=1)[:, -2]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
         hits = cls_ids == cls_ids[am]
-
         acc = hits.mean()
-        #print(f"Question cross-match accuracy: {acc}")
+
+        # Second nearest neighbour
+        am2 = np.argsort(cm, axis=1)[:, -3]
+        hits2 = cls_ids == cls_ids[am2]
+        acc2 = hits2.mean() 
 
         if not hits.all() and verb:
             print("\nIncorrect matches:")
@@ -207,7 +215,7 @@ class FAQ:
             plt.draw()
             plt.pause(show_time)
             return acc, fig
-        return acc, None
+        return acc, acc2
 
     def ans_test(self, verb=False, show_cm=False, show_time=2.0):
         # Classifies questions by directly comparing them with embedded answers and computes accuracy
