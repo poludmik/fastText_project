@@ -27,8 +27,7 @@ def count_word_probs_in_answers(path_to_corpus, path_to_save):
     corpus = ans_df['answer'].str.cat(sep="\n")
     # words = corpus.lower().split()
 
-    words = LMTZR.tokenize(corpus)
-    words = [LMTZR.lemmatize_cs(w) for w in words]
+    words = LMTZR.clean_corpus(corpus)    
     
     probs = {}
     for word in words:
@@ -47,8 +46,8 @@ def count_word_probs_in_questions(path_to_questions, path_to_save):
     ans_df = pd.read_excel(path_to_questions)
     corpus = ans_df['question'].str.cat(sep="\n")
     # words = corpus.lower().split()
-    words = LMTZR.tokenize(corpus)
-    words = [LMTZR.lemmatize_cs(w) for w in words]
+
+    words = LMTZR.clean_corpus(corpus)
     
     probs = {}
     for word in words:

@@ -100,7 +100,8 @@ class FAQ:
 
     def weighted_sentence_embedding(self, sentence):
         # Computes weighted sentence embedding acoording to: https://openreview.net/pdf?id=SyK00v5xx
-        words = [LMTZR.lemmatize_cs(w) for w in LMTZR.tokenize(sentence)]
+        
+        words = LMTZR.clean_corpus(sentence)
 
         def word_probability(word):
             if word in self.word_probs.keys():
@@ -286,7 +287,7 @@ class FAQ:
         cm = self.db @ self.db.T
         am = np.argmax(cm, axis=1)
         dict_question2classes = {}
-
+        print("Same question with different classes:")
         for i in range(am.shape[0]):
             if am[i] != i:
                 if self.questions["question"][i] not in dict_question2classes:
@@ -295,9 +296,8 @@ class FAQ:
                     dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][i]))
                 if str(self.questions["class"][am[i]]) not in dict_question2classes[self.questions["question"][i]]:
                     dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][am[i]]))
-                # print("Same question with different classes:")
-                # print("Q:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
-                # print("Q_argmax:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
+                print("\nQ:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
+                print("Q_argmax:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
         
         if save_path is not None:
             json_data = json.dumps(dict_question2classes)
