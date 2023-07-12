@@ -43,8 +43,9 @@ def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path
     for k in keys_to_remove:
         probs.pop(k)
 
-    with open(path_to_save, "w") as f:
-        json.dump(probs, f)
+    if path_to_save:
+        with open(path_to_save, "w") as f:
+            json.dump(probs, f)
 
     return probs, len(words)
 
