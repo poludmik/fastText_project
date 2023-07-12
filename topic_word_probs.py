@@ -5,15 +5,9 @@ import pandas as pd
 import json
 import operator
 from collections import Counter
+import matplotlib.pyplot as plt
 
 from cs_lemmatizer import *
-
-
-# nltk.download('wordnet')
-# lmtzr = WordNetLemmatizer()
-# stem = PorterStemmer()
-# stem_method = lmtzr.lemmatize
-
 
 
 def remove_tags():
@@ -22,12 +16,16 @@ def remove_tags():
     ans_df.to_excel("Q78_answers_no_tags.xlsx")
 
 
-def count_word_probs_in_answers(path_to_corpus, path_to_save):
-    ans_df = pd.read_excel(path_to_corpus)
-    corpus = ans_df['answer'].str.cat(sep="\n")
-    # words = corpus.lower().split()
-
-    words = LMTZR.clean_corpus(corpus)    
+def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path_to_answers=None):
+    words = []
+    if path_to_answers:
+        ans_df = pd.read_excel(path_to_answers)
+        corpus = ans_df['answer'].str.cat(sep="\n")
+        words += LMTZR.clean_corpus(corpus)    
+    if path_to_questions:
+        ans_df = pd.read_excel(path_to_questions)
+        corpus = ans_df['question'].str.cat(sep="\n")
+        words += LMTZR.clean_corpus(corpus)
     
     probs = {}
     for word in words:
@@ -36,30 +34,19 @@ def count_word_probs_in_answers(path_to_corpus, path_to_save):
             probs[word] += 1
         else:
             probs[word] = 1
+
+    keys_to_remove = []
     for key in probs.keys():
+        if probs[key] < 5:
+            keys_to_remove.append(key)
         probs[key] /= len(words)
+    for k in keys_to_remove:
+        probs.pop(k)
+
     with open(path_to_save, "w") as f:
         json.dump(probs, f)
 
-
-def count_word_probs_in_questions(path_to_questions, path_to_save):
-    ans_df = pd.read_excel(path_to_questions)
-    corpus = ans_df['question'].str.cat(sep="\n")
-    # words = corpus.lower().split()
-
-    words = LMTZR.clean_corpus(corpus)
-    
-    probs = {}
-    for word in words:
-        word = word.strip('.')
-        if word in probs.keys():
-            probs[word] += 1
-        else:
-            probs[word] = 1
-    for key in probs.keys():
-        probs[key] /= len(words)
-    with open(path_to_save, "w") as f:
-        json.dump(probs, f)
+    return probs, len(words)
 
 
 def combine_dicts(a, b, save_path=None):
@@ -70,6 +57,32 @@ def combine_dicts(a, b, save_path=None):
         with open(save_path, "w") as f:
             json.dump(combined_dict, f)
     return combined_dict
+
+
+def histogram_of_words(dict_of_probs, number_of_words):
+    """
+    Outputs every second word in a dict
+    """
+    i = 0
+    dict_of_probs = dict(sorted(dict_of_probs.items(), key=lambda item: item[1]))
+    delete_keys = []
+    for key in dict_of_probs.keys():
+        dict_of_probs[key] *= number_of_words
+        i += 1
+        if i % 2 != 0:
+            delete_keys.append(key)
+
+    for k in delete_keys:
+        dict_of_probs.pop(k)
+
+    print(dict(sorted(dict_of_probs.items(), key=lambda item: -item[1])))
+    print("Number of distinctive words =", len(dict_of_probs))
+    plt.figure(figsize=(10, 15), dpi=80)
+    plt.xticks(fontsize=9)
+    plt.barh(list(dict_of_probs.keys()), dict_of_probs.values(), color='g')
+    plt.savefig('780_upv_questions/word_counts.png')
+
+
 
 
 if __name__ == "__main__":
