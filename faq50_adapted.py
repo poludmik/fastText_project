@@ -39,13 +39,17 @@ class FAQ:
             answers_path=None,
             probs=None, 
             alpha=1e-4, 
-            compressed=False
+            compressed=False,
+            rm_stop_words=False,
+            lemm=False
         ):
         self.model = model
         self.answers = None
         self.sentence_embedding = self.mean_sentence_embedding
         self.word_probs = probs
         self.alpha = alpha
+        self.rm_stop_words = rm_stop_words
+        self.lemm = lemm
 
         if compressed:
             self.get_w_vec = self.model.word_vec
@@ -91,8 +95,11 @@ class FAQ:
 
     def mean_sentence_embedding(self, sentence):
         # Same as default, but computed manually
-        words = sentence.lower().replace('\n', ' ').split()
+        # words = sentence.lower().replace('\n', ' ').split()
         #words = word_tokenize(sentence)
+
+        words = LMTZR.clean_corpus(sentence, rm_stop_words=self.rm_stop_words, lemm=self.lemm)
+
         wes = np.array([self.get_w_vec(w) for w in words])
         wes /= np.linalg.norm(wes, axis=1)[:, np.newaxis] + 1e-9
         se = np.mean(wes, axis=0)
@@ -101,7 +108,7 @@ class FAQ:
     def weighted_sentence_embedding(self, sentence):
         # Computes weighted sentence embedding acoording to: https://openreview.net/pdf?id=SyK00v5xx
         
-        words = LMTZR.clean_corpus(sentence)
+        words = LMTZR.clean_corpus(sentence, rm_stop_words=self.rm_stop_words, lemm=self.lemm)
 
         def word_probability(word):
             if word in self.word_probs.keys():
@@ -183,7 +190,7 @@ class FAQ:
             plt.draw()
             plt.pause(show_time)
             return acc, fig
-        return acc, acc_second
+        return round(acc, 3), round(acc_second, 3)
     
     def cross_match_test(self, verb=False, show_cm=False, show_time=2.0):
         # Computes cosine similarities of all question pairs
@@ -216,7 +223,7 @@ class FAQ:
             plt.draw()
             plt.pause(show_time)
             return acc, fig
-        return acc, acc2
+        return round(acc, 3), round(acc2, 3)
 
     def ans_test(self, verb=False, show_cm=False, show_time=2.0):
         # Classifies questions by directly comparing them with embedded answers and computes accuracy
