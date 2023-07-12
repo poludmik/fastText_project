@@ -23,8 +23,8 @@ def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path
         corpus = ans_df['answer'].str.cat(sep="\n")
         words += LMTZR.clean_corpus(corpus)    
     if path_to_questions:
-        ans_df = pd.read_excel(path_to_questions)
-        corpus = ans_df['question'].str.cat(sep="\n")
+        q_df = pd.read_excel(path_to_questions)
+        corpus = q_df['question'].str.cat(sep="\n")
         words += LMTZR.clean_corpus(corpus)
     
     probs = {}

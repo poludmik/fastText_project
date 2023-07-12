@@ -1,15 +1,6 @@
-import fasttext
 import numpy as np
 import pandas as pd
-import warnings
-import seaborn as sn
-import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
-import json
-import os
-import nltk
-from nltk.stem.wordnet import WordNetLemmatizer
-from nltk.stem import PorterStemmer
+from tqdm import tqdm
 from nltk import word_tokenize
 from nltk.corpus import wordnet
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -20,9 +11,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 import simplemma
 from simplemma import simple_tokenizer
+from cs_lemmatizer import *
 
-
-  
 
 class TFIDF_Classifier:
     def __init__(self, questions_path):
@@ -34,6 +24,26 @@ class TFIDF_Classifier:
             return simplemma.lemmatize(word, lang=language)
         self.lemmatize_cs_w = lambda w: lemmatize_cs(w)
 
+    def leave_one_out_test(self, rm_stop_words=True, lemm=True):
+        df = pd.read_excel(self.questions_path)
+        n_got_right = 0
+        for index, row in tqdm(df.iterrows()):
+            sentence = row['question']
+            true_class = int(row['class'])
+
+            self.structured_list = ["" for _ in range(df['class'].max() + 1)]
+            for index2, row2 in df.iterrows():
+                if index == index2:
+                    continue
+                words = LMTZR.clean_corpus(row2['question'], rm_stop_words, lemm)
+                self.structured_list[int(row2['class'])] += " " + ' '.join(words)
+            self.get_TFIDF_matrix()
+            if self.classify_sentence(sentence) == true_class:
+                n_got_right += 1
+            
+        return round(n_got_right / len(df.index), 3)
+
+
     def structure_data(self, test_data_percent=None):
         i = 0
         df = pd.read_excel(self.questions_path)
@@ -41,7 +51,6 @@ class TFIDF_Classifier:
         n_of_test = int(test_data_percent * len(df.index))
         drop_indices = np.random.choice(df.index, n_of_test, replace=False)
         df_tests = df.iloc[drop_indices]
-        
         if test_data_percent == 1:
             df_subset = df
         else:
@@ -64,19 +73,20 @@ class TFIDF_Classifier:
         X = vectorizer.fit_transform(self.structured_list)
         self.feature_names = vectorizer.get_feature_names_out()
         self.TFIDF_matrix = X
-        print("TFIDF matrix shape:", X.shape)
+        # print("TFIDF matrix shape:", X.shape)
 
     def classify_sentence(self, sentence):
         max_p = -np.inf
         classified_c = None
         for c in range(self.TFIDF_matrix.shape[0]): # classes
             p = 0
-            for word in simple_tokenizer(sentence):
+            words = LMTZR.clean_corpus(sentence)
+            for word in words:
                 w = self.lemmatize_cs_w(word)
                 if w not in self.feature_names:
                     continue
                 p += self.TFIDF_matrix[c, np.where(self.feature_names == w)[0][0]]
-            p /= len(simple_tokenizer(sentence))
+            p /= len(words)
             if p > max_p:
                 max_p = p
                 classified_c = c
