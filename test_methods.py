@@ -64,13 +64,14 @@ class Tester:
                    str(f)+', '+str(s)+', '+str(t)]
             self.ft_results_df['Mean_sent_embd: sw='+str(sw*1)+", lm="+str(lemm*1)] = res
 
+
         print("\nWeighted sentence embedding:")
         probs, _ = count_word_probs_in_corpuses(path_to_questions=path_to_q, path_to_answers=path_to_a)
         for sw, lemm in stop_words_and_lemm:
             best_a_cross = AlphaAcc(0, [0, 0])
             best_a_mean = AlphaAcc(0, [0, 0])
             best_a_mean_disj = AlphaAcc(0, [0, 0, 0])
-            
+
             # 30 different alphas to find the approximate best
             for alpha in tqdm(np.arange(0.01, 0.6, 0.02)):
                 faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=sw, lemm=lemm)
@@ -88,11 +89,48 @@ class Tester:
                     best_a_mean_disj = AlphaAcc(alpha, [mean_disj_acc, s, t])
 
             print(f"sw={sw}, lemm={lemm}, mean_disj={best_a_mean_disj.acc[0]}, best_a={best_a_mean_disj.alpha}")
-            res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(best_a_cross.alpha), 
-                   str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(best_a_mean.alpha),
-                   str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(best_a_mean_disj.alpha)]
+            res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(round(best_a_cross.alpha, 2)), 
+                   str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(round(best_a_mean.alpha, 2)),
+                   str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
             
-            self.ft_results_df["Weighted_sent_embd: sw="+str(sw*1)+", lm="+str(lemm*1)+":alpha"] = res
+            self.ft_results_df["Weighted_sent_embd: sw="+str(sw*1)+", lm="+str(lemm*1)] = res
+
+
+        print("\nWeighted sentence embedding with data from q/a:")
+        q_and_a = [(path_to_q, None), (None, path_to_a), (path_to_q, path_to_a)]
+        for q, ans in q_and_a:
+            probs, _ = count_word_probs_in_corpuses(path_to_questions=q, path_to_answers=ans)
+            best_a_cross = AlphaAcc(0, [0, 0])
+            best_a_mean = AlphaAcc(0, [0, 0])
+            best_a_mean_disj = AlphaAcc(0, [0, 0, 0])
+
+            # 30 different alphas to find the approximate best
+            for alpha in tqdm(np.arange(0.01, 0.6, 0.02)):
+                faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=True, lemm=True)
+                
+                cross_acc, cross_acc_sec = faq.cross_match_test()
+                if cross_acc > best_a_cross.acc[0]:
+                    best_a_cross = AlphaAcc(alpha, [cross_acc, cross_acc_sec])
+
+                mean_acc, mean_acc_sec = faq.mean_match_test()
+                if mean_acc > best_a_mean.acc[0]:
+                    best_a_mean = AlphaAcc(alpha, [mean_acc, mean_acc_sec])
+
+                mean_disj_acc, s, t = faq.mean_match_test_disjunctive()
+                if mean_disj_acc > best_a_mean_disj.acc[0]:
+                    best_a_mean_disj = AlphaAcc(alpha, [mean_disj_acc, s, t])
+
+            a, b = 0, 0
+            if q:
+                a = 1
+            if ans:
+                b = 1
+            print(f"From: que={a}, ans={b}, mean_disj={best_a_mean_disj.acc[0]}, best_a={best_a_mean_disj.alpha}")
+            res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(round(best_a_cross.alpha, 2)), 
+                   str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(round(best_a_mean.alpha, 2)),
+                   str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
+            
+            self.ft_results_df["Weighted_data_from q="+str(a)+", a="+str(b)+", sw=1, lm=1"] = res
 
         print(self.ft_results_df)
         self.ft_results_df.to_excel(path_to_save)
@@ -105,7 +143,7 @@ if __name__ == "__main__":
     model_path = "models/cc.cs.300.bin"
     path_to_q = "780_upv_questions/Q78_questions.xlsx"
     path_to_a = "780_upv_questions/Q78_answers_no_tags.xlsx"
-    path_to_save_results = "test_results/all_fastText_tests_results.xlsx"
+    path_to_save_results = "test_results/fastText_tests_results.xlsx"
 
 
     t = Tester()
