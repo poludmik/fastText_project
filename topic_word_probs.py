@@ -52,8 +52,6 @@ def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path
 
 
 def combine_dicts(a, b, save_path=None):
-    # return dict(a.items() + b.items() +
-    #     [(k, operator.add(a[k], b[k])) for k in set(b) & set(a)])
     combined_dict = Counter(a) + Counter(b)
     if save_path:
         with open(save_path, "w") as f:
@@ -62,16 +60,12 @@ def combine_dicts(a, b, save_path=None):
 
 
 def get_TFIDF_threshold_probabilities(tfidf_matrix, feature_names):
-
     max_in_all_classes = np.squeeze(np.max(tfidf_matrix, axis=0).toarray())
     p_d = {}
-    print(np.mean(max_in_all_classes))
     for i, w in enumerate(feature_names):
+        # if max_in_all_classes[i] < 0.1:
+            # continue
         p_d[w] = max_in_all_classes[i]
-
-    print("n words =", len(p_d))
-    print(" \"probs\" from tf_idf:", dict(sorted(p_d.items(), key=lambda item: -item[1])))
-
     return p_d
 
 

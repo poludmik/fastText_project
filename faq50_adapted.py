@@ -13,6 +13,8 @@ import json
 import os
 
 from cs_lemmatizer import *
+from tfidf_classifier import *
+from topic_word_probs import *
 
 
 def extract_word_probs(model_path: str, corpus_size: int = 4.1e9):
@@ -41,7 +43,8 @@ class FAQ:
             alpha=1e-4, 
             compressed=False,
             rm_stop_words=False,
-            lemm=False
+            lemm=False,
+            tfidf_weighting=False
         ):
         self.model = model
         self.answers = None
@@ -50,6 +53,8 @@ class FAQ:
         self.alpha = alpha
         self.rm_stop_words = rm_stop_words
         self.lemm = lemm
+        self.path_to_q = questions_path
+        self.tfidf_weighting = tfidf_weighting
 
         if compressed:
             self.get_w_vec = self.model.word_vec
@@ -119,8 +124,11 @@ class FAQ:
         wes = np.array([self.get_w_vec(w) for w in words])
         probs = np.array([word_probability(w) for w in words])[:, np.newaxis]
         wes /= np.linalg.norm(wes, axis=1)[:, np.newaxis] + 1e-9
+
         wes *= 1 / (self.alpha + probs)
-        wes *= probs  # for probabilities of words from answer dataset
+        if self.tfidf_weighting:
+            wes *= probs
+
         se = np.mean(wes, axis=0)
         return se / (np.linalg.norm(se) + 1e-9)
 
@@ -169,7 +177,7 @@ class FAQ:
 
         sorted_indexes = np.argsort(cm, axis=1)
         preds_second = sorted_indexes[:, -2]
-        hits_second = preds_second == gts
+        hits_second = (preds_second == gts) * (hits == False)
         acc_second = hits_second.mean()
 
         #print(f"Mean match accuracy: {acc}")
@@ -204,8 +212,8 @@ class FAQ:
 
         # Second nearest neighbour
         am2 = np.argsort(cm, axis=1)[:, -3]
-        hits2 = cls_ids == cls_ids[am2]
-        acc2 = hits2.mean() 
+        hits2 = (cls_ids == cls_ids[am2]) * (hits == False)
+        acc2 = hits2.mean()
 
         if not hits.all() and verb:
             print("\nIncorrect matches:")
@@ -362,8 +370,9 @@ class FAQ:
             with open(save_path, "w") as outfile:
                 json.dump(new_cl2cl, outfile)
 
-    def mean_match_test_disjunctive(self):
+    def mean_match_test_disjunctive(self, leave_one_out_also_tfidf=False):
         # does not include the tested question into "training data"
+        copy_probs = self.word_probs
         n_got_right = 0
         n_got_second_right = 0
         n_got_third_right = 0
@@ -373,6 +382,12 @@ class FAQ:
                 tmp_mean_db = self.mean_db
                 tmp_mean_vec = np.zeros(tmp_mean_db.shape[1])
                 c = 0
+                if self.tfidf_weighting and leave_one_out_also_tfidf:
+                    classifier = TFIDF_Classifier(self.path_to_q)
+                    test_data = classifier.structure_data(test_data_percent=1, sents_idxs_to_leaveout=[index]) 
+                    tfidf_matrix, feat_names = classifier.get_TFIDF_matrix()
+                    self.word_probs = get_TFIDF_threshold_probabilities(tfidf_matrix, feat_names)
+
                 for index_m, row_m in self.questions[self.questions["class"] == cls].iterrows():
                     if index == index_m:
                         continue
@@ -392,6 +407,7 @@ class FAQ:
                 elif sorted_indexes[-3] == cls:
                     n_got_third_right += 1
         
+        self.word_probs = copy_probs
         n_of_questions = len(self.questions.index)
         return round(n_got_right / n_of_questions, 3), round(n_got_second_right / n_of_questions, 3),  round(n_got_third_right / n_of_questions, 3)
 
