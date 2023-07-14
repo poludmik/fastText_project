@@ -120,7 +120,7 @@ class FAQ:
         probs = np.array([word_probability(w) for w in words])[:, np.newaxis]
         wes /= np.linalg.norm(wes, axis=1)[:, np.newaxis] + 1e-9
         wes *= 1 / (self.alpha + probs)
-        # wes *= probs  # for probabilities of words from answer dataset
+        wes *= probs  # for probabilities of words from answer dataset
         se = np.mean(wes, axis=0)
         return se / (np.linalg.norm(se) + 1e-9)
 

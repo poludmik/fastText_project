@@ -6,6 +6,7 @@ import json
 import operator
 from collections import Counter
 import matplotlib.pyplot as plt
+import numpy as np
 
 from cs_lemmatizer import *
 
@@ -58,6 +59,20 @@ def combine_dicts(a, b, save_path=None):
         with open(save_path, "w") as f:
             json.dump(combined_dict, f)
     return combined_dict
+
+
+def get_TFIDF_threshold_probabilities(tfidf_matrix, feature_names):
+
+    max_in_all_classes = np.squeeze(np.max(tfidf_matrix, axis=0).toarray())
+    p_d = {}
+    print(np.mean(max_in_all_classes))
+    for i, w in enumerate(feature_names):
+        p_d[w] = max_in_all_classes[i]
+
+    print("n words =", len(p_d))
+    print(" \"probs\" from tf_idf:", dict(sorted(p_d.items(), key=lambda item: -item[1])))
+
+    return p_d
 
 
 def histogram_of_words(dict_of_probs, number_of_words):

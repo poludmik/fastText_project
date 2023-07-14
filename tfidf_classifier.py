@@ -20,9 +20,6 @@ class TFIDF_Classifier:
         self.structured_list = None
         self.TFIDF_matrix = None
         self.feature_names = None
-        def lemmatize_cs(word, language="cs"):
-            return simplemma.lemmatize(word, lang=language)
-        self.lemmatize_cs_w = lambda w: lemmatize_cs(w)
 
     def leave_one_out_test(self, rm_stop_words=True, lemm=True):
         df = pd.read_excel(self.questions_path)
@@ -59,7 +56,7 @@ class TFIDF_Classifier:
         self.structured_list = ["" for _ in range(df['class'].max() + 1)]
 
         for index, row in df_subset.iterrows():
-            lemmatized = [self.lemmatize_cs_w(word) for word in simple_tokenizer(row['question'])]
+            lemmatized = LMTZR.clean_corpus(row['question'])
             self.structured_list[int(row['class'])] += " " + ' '.join(lemmatized)
 
         test_data = []
@@ -74,6 +71,7 @@ class TFIDF_Classifier:
         self.feature_names = vectorizer.get_feature_names_out()
         self.TFIDF_matrix = X
         # print("TFIDF matrix shape:", X.shape)
+        return X, self.feature_names
 
     def classify_sentence(self, sentence):
         max_p = -np.inf
