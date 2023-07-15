@@ -192,7 +192,7 @@ class Tester:
 
 
         print(self.ft_results_df)
-        self.ft_results_df.to_excel(path_to_save)
+        self.ft_results_df.to_excel(path_to_save, index=False)
 
 
 
