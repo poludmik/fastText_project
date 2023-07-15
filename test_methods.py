@@ -47,94 +47,152 @@ class Tester:
         self.TFIDF_n_of_words = c.TFIDF_matrix.shape[1]
 
 
-    def fast_text_tests(self, model_path, path_to_q, path_to_a, path_to_save):
+    def fast_text_tests(self, model_path, path_to_q, path_to_a, path_to_save,
+                        modify_existing_xlsx_file=False,
+                        mean=False, 
+                        weighted=False,
+                        weighted_qa=False,
+                        weighted_by_tfidf=False
+                        ):
+        
+        if modify_existing_xlsx_file:
+            self.ft_results_df = pd.read_excel(path_to_save)
+
         stop_words_and_lemm = [(False, False), (True, False), (False, True), (True, True)]
 
         model = fasttext.load_model(model_path)
 
-        print("\nMean sentence embedding:")
-        for sw, lemm in stop_words_and_lemm:
-            faq = FAQ(model, path_to_q, path_to_a, probs=None, alpha=None, rm_stop_words=sw, lemm=lemm)
-            cross_acc, cross_acc_sec = faq.cross_match_test()
-            mean_acc, mean_acc_sec = faq.mean_match_test()
-            f, s, t = faq.mean_match_test_disjunctive()
-            print(f"sw={sw*1}, lemm={lemm*1}, mean_disj={f}")
-            res = [str(cross_acc)+', '+str(cross_acc_sec), 
-                   str(mean_acc)+', '+str(mean_acc_sec),
-                   str(f)+', '+str(s)+', '+str(t)]
-            self.ft_results_df['Mean_sent_embd: sw='+str(sw*1)+", lm="+str(lemm*1)] = res
+        if mean:
+            print("\nMean sentence embedding:")
+            for sw, lemm in stop_words_and_lemm:
+                faq = FAQ(model, path_to_q, path_to_a, probs=None, alpha=None, rm_stop_words=sw, lemm=lemm)
+                cross_acc, cross_acc_sec = faq.cross_match_test()
+                mean_acc, mean_acc_sec = faq.mean_match_test()
+                f, s, t = faq.mean_match_test_disjunctive()
+                print(f"sw={sw*1}, lemm={lemm*1}, mean_disj={f}")
+                res = [str(cross_acc)+', '+str(cross_acc_sec), 
+                       str(mean_acc)+', '+str(mean_acc_sec),
+                       str(f)+', '+str(s)+', '+str(t)]
+                self.ft_results_df['Mean_sent_embd: sw='+str(sw*1)+", lm="+str(lemm*1)] = res
 
+        if weighted:
+            print("\nWeighted sentence embedding:")
+            probs, _ = count_word_probs_in_corpuses(path_to_questions=path_to_q, path_to_answers=path_to_a)
+            for sw, lemm in stop_words_and_lemm:
+                best_a_cross = AlphaAcc(0, [0, 0])
+                best_a_mean = AlphaAcc(0, [0, 0])
+                best_a_mean_disj = AlphaAcc(0, [0, 0, 0])
 
-        print("\nWeighted sentence embedding:")
-        probs, _ = count_word_probs_in_corpuses(path_to_questions=path_to_q, path_to_answers=path_to_a)
-        for sw, lemm in stop_words_and_lemm:
+                # 30 different alphas to find the approximate best
+                for alpha in tqdm(np.arange(0.01, 0.6, 0.02)):
+                    faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=sw, lemm=lemm)
+
+                    cross_acc, cross_acc_sec = faq.cross_match_test()
+                    if cross_acc > best_a_cross.acc[0]:
+                        best_a_cross = AlphaAcc(alpha, [cross_acc, cross_acc_sec])
+
+                    mean_acc, mean_acc_sec = faq.mean_match_test()
+                    if mean_acc > best_a_mean.acc[0]:
+                        best_a_mean = AlphaAcc(alpha, [mean_acc, mean_acc_sec])
+
+                    mean_disj_acc, s, t = faq.mean_match_test_disjunctive()
+                    if mean_disj_acc > best_a_mean_disj.acc[0]:
+                        best_a_mean_disj = AlphaAcc(alpha, [mean_disj_acc, s, t])
+
+                print(f"sw={sw}, lemm={lemm}, mean_disj={best_a_mean_disj.acc[0]}, best_a={best_a_mean_disj.alpha}")
+                res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(round(best_a_cross.alpha, 2)), 
+                       str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(round(best_a_mean.alpha, 2)),
+                       str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
+
+                self.ft_results_df["Weighted_sent_embd: sw="+str(sw*1)+", lm="+str(lemm*1)] = res
+
+        if weighted_qa:
+            print("\nWeighted sentence embedding with data from q/a:")
+            q_and_a = [(path_to_q, None), (None, path_to_a), (path_to_q, path_to_a)]
+            for q, ans in q_and_a:
+                probs, _ = count_word_probs_in_corpuses(path_to_questions=q, path_to_answers=ans)
+                best_a_cross = AlphaAcc(0, [0, 0])
+                best_a_mean = AlphaAcc(0, [0, 0])
+                best_a_mean_disj = AlphaAcc(0, [0, 0, 0])
+
+                # 30 different alphas to find the approximate best
+                for alpha in tqdm(np.arange(0.01, 0.6, 0.02)):
+                    faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=True, lemm=True)
+
+                    cross_acc, cross_acc_sec = faq.cross_match_test()
+                    if cross_acc > best_a_cross.acc[0]:
+                        best_a_cross = AlphaAcc(alpha, [cross_acc, cross_acc_sec])
+
+                    mean_acc, mean_acc_sec = faq.mean_match_test()
+                    if mean_acc > best_a_mean.acc[0]:
+                        best_a_mean = AlphaAcc(alpha, [mean_acc, mean_acc_sec])
+
+                    mean_disj_acc, s, t = faq.mean_match_test_disjunctive()
+                    if mean_disj_acc > best_a_mean_disj.acc[0]:
+                        best_a_mean_disj = AlphaAcc(alpha, [mean_disj_acc, s, t])
+
+                a, b = 0, 0
+                if q:
+                    a = 1
+                if ans:
+                    b = 1
+                print(f"From: que={a}, ans={b}, mean_disj={best_a_mean_disj.acc[0]}, best_a={best_a_mean_disj.alpha}")
+                res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(round(best_a_cross.alpha, 2)), 
+                       str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(round(best_a_mean.alpha, 2)),
+                       str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
+
+                self.ft_results_df["Weighted_data_from q="+str(a)+", a="+str(b)+", sw=1, lm=1"] = res
+
+        if weighted_by_tfidf:
+            print("Weighted by TF-IDF:")
+            
             best_a_cross = AlphaAcc(0, [0, 0])
             best_a_mean = AlphaAcc(0, [0, 0])
-            best_a_mean_disj = AlphaAcc(0, [0, 0, 0])
+
+            c = TFIDF_Classifier(path_to_q)
+            test_data = c.structure_data(test_data_percent=1) 
+            tfidf_matrix, feat_names = c.get_TFIDF_matrix()
+            probs = get_TFIDF_threshold_probabilities(tfidf_matrix, feat_names)
 
             # 30 different alphas to find the approximate best
-            for alpha in tqdm(np.arange(0.01, 0.6, 0.02)):
-                faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=sw, lemm=lemm)
+            for alpha in tqdm(np.arange(0.01, 0.5, 0.02)):
+                faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=True, lemm=True,
+                                            tfidf_weighting=True)
                 
                 cross_acc, cross_acc_sec = faq.cross_match_test()
                 if cross_acc > best_a_cross.acc[0]:
                     best_a_cross = AlphaAcc(alpha, [cross_acc, cross_acc_sec])
 
-                mean_acc, mean_acc_sec = faq.mean_match_test()
-                if mean_acc > best_a_mean.acc[0]:
-                    best_a_mean = AlphaAcc(alpha, [mean_acc, mean_acc_sec])
-
                 mean_disj_acc, s, t = faq.mean_match_test_disjunctive()
-                if mean_disj_acc > best_a_mean_disj.acc[0]:
-                    best_a_mean_disj = AlphaAcc(alpha, [mean_disj_acc, s, t])
+                if mean_disj_acc > best_a_mean.acc[0]:
+                    best_a_mean = AlphaAcc(alpha, [mean_disj_acc, s, t])
 
-            print(f"sw={sw}, lemm={lemm}, mean_disj={best_a_mean_disj.acc[0]}, best_a={best_a_mean_disj.alpha}")
+            print(f"    Best alphas on non-disjunctive: cross:{best_a_cross.alpha}, mean:{best_a_mean.alpha}")
+
             res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(round(best_a_cross.alpha, 2)), 
-                   str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(round(best_a_mean.alpha, 2)),
-                   str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
-            
-            self.ft_results_df["Weighted_sent_embd: sw="+str(sw*1)+", lm="+str(lemm*1)] = res
+                       "Not tested",
+                       str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+', '+str(best_a_mean.acc[2])+' : '+str(round(best_a_mean.alpha, 2))]
+
+            self.ft_results_df["Weighted_by_tfidf (q included)"] = res
 
 
-        print("\nWeighted sentence embedding with data from q/a:")
-        q_and_a = [(path_to_q, None), (None, path_to_a), (path_to_q, path_to_a)]
-        for q, ans in q_and_a:
-            probs, _ = count_word_probs_in_corpuses(path_to_questions=q, path_to_answers=ans)
-            best_a_cross = AlphaAcc(0, [0, 0])
-            best_a_mean = AlphaAcc(0, [0, 0])
-            best_a_mean_disj = AlphaAcc(0, [0, 0, 0])
+            print(f"Now testing disjunctive cross and mean with best alphas.\nIt will take 4-6 minutes.")
+            faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=best_a_cross.alpha, rm_stop_words=True, lemm=True,
+                                            tfidf_weighting=True)
+            acc, acc_sec = faq.cross_match_test_tfidf_disj()
+            faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=best_a_mean.alpha, rm_stop_words=True, lemm=True,
+                                            tfidf_weighting=True)
+            f, s, t = faq.mean_match_test_disjunctive(leave_one_out_also_tfidf=True)
 
-            # 30 different alphas to find the approximate best
-            for alpha in tqdm(np.arange(0.01, 0.6, 0.02)):
-                faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=alpha, rm_stop_words=True, lemm=True)
-                
-                cross_acc, cross_acc_sec = faq.cross_match_test()
-                if cross_acc > best_a_cross.acc[0]:
-                    best_a_cross = AlphaAcc(alpha, [cross_acc, cross_acc_sec])
+            res2 = [str(acc)+', '+str(acc_sec)+' : '+str(round(best_a_cross.alpha, 2)), 
+                       "Not tested",
+                       str(f)+', '+str(s)+', '+str(t)+' : '+str(round(best_a_mean.alpha, 2))]
 
-                mean_acc, mean_acc_sec = faq.mean_match_test()
-                if mean_acc > best_a_mean.acc[0]:
-                    best_a_mean = AlphaAcc(alpha, [mean_acc, mean_acc_sec])
+            self.ft_results_df["Weighted_by_tfidf (disjunctive)"] = res2
 
-                mean_disj_acc, s, t = faq.mean_match_test_disjunctive()
-                if mean_disj_acc > best_a_mean_disj.acc[0]:
-                    best_a_mean_disj = AlphaAcc(alpha, [mean_disj_acc, s, t])
-
-            a, b = 0, 0
-            if q:
-                a = 1
-            if ans:
-                b = 1
-            print(f"From: que={a}, ans={b}, mean_disj={best_a_mean_disj.acc[0]}, best_a={best_a_mean_disj.alpha}")
-            res = [str(best_a_cross.acc[0])+', '+str(best_a_cross.acc[1])+' : '+str(round(best_a_cross.alpha, 2)), 
-                   str(best_a_mean.acc[0])+', '+str(best_a_mean.acc[1])+' : '+str(round(best_a_mean.alpha, 2)),
-                   str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
-            
-            self.ft_results_df["Weighted_data_from q="+str(a)+", a="+str(b)+", sw=1, lm=1"] = res
 
         print(self.ft_results_df)
         self.ft_results_df.to_excel(path_to_save)
-
 
 
 
@@ -148,7 +206,13 @@ if __name__ == "__main__":
 
     t = Tester()
     # t.TFIDF_classifier_test(path_to_q)
-    t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results)
+    # t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results)
+    t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results,
+                      modify_existing_xlsx_file=True,
+                      mean=True,
+                      weighted=True,
+                      weighted_qa=True,
+                      weighted_by_tfidf=False)
 
 
 

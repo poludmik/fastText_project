@@ -60,7 +60,11 @@ def combine_dicts(a, b, save_path=None):
 
 
 def get_TFIDF_threshold_probabilities(tfidf_matrix, feature_names):
-    max_in_all_classes = np.squeeze(np.max(tfidf_matrix, axis=0).toarray())
+    """
+    For each word, take the maximum value from tf-idf matrix across all classes.
+    If a word is important in some class -> it's p_d value will be big.
+    """
+    max_in_all_classes = np.squeeze(np.max(tfidf_matrix.toarray(), axis=0))
     p_d = {}
     for i, w in enumerate(feature_names):
         # if max_in_all_classes[i] < 0.1:

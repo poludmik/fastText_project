@@ -118,7 +118,8 @@ class FAQ:
         def word_probability(word):
             if word in self.word_probs.keys():
                 return self.word_probs[word]
-            return 0.0
+            return min(self.word_probs.items(), key=lambda x: x[1])[1]
+            # return 0 # also works, but assigning some number works better
 
         #words = word_tokenize(sentence)
         wes = np.array([self.get_w_vec(w) for w in words])
@@ -411,5 +412,33 @@ class FAQ:
         n_of_questions = len(self.questions.index)
         return round(n_got_right / n_of_questions, 3), round(n_got_second_right / n_of_questions, 3),  round(n_got_third_right / n_of_questions, 3)
 
+    def cross_match_test_tfidf_disj(self):
+        # Computes cosine similarities of all question pairs
+        # A question is succesfully matched, if its second highest similarity is with a question of the same class
+        # Computes accuracy as the ratio of succesfull matches
+        copy_probs = self.word_probs
+        cls_ids = self.questions["class"].to_numpy(dtype=int)
 
+        hits = np.zeros(len(self.questions))
+        hits2 = np.zeros(len(self.questions))
+        mask = np.full(len(self.questions), False)
+        for i, row in enumerate(self.questions.iterrows()):
+            c = TFIDF_Classifier(self.path_to_q)
+            c.structure_data(test_data_percent=1, sents_idxs_to_leaveout=[i]) 
+            tfidf_matrix, feat_names = c.get_TFIDF_matrix()
+            self.word_probs = get_TFIDF_threshold_probabilities(tfidf_matrix, feat_names)
+            self.db = np.array([self.sentence_embedding(q) for q in self.questions["question"]])
+
+            cm = self.db[i] @ self.db.T
+            am = np.argsort(cm)[-2]
+
+            mask[i] = True
+            hits += (cls_ids == cls_ids[am]) * mask
+            # Second nearest neighbour
+            am2 = np.argsort(cm)[-3]
+            hits2 += (cls_ids == cls_ids[am2]) * (hits == False) * mask
+            mask[i] = False
+
+        self.word_probs = copy_probs
+        return round(hits.mean(), 3), round(hits2.mean(), 3)
 
