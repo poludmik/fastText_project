@@ -100,8 +100,6 @@ class FAQ:
 
     def mean_sentence_embedding(self, sentence):
         # Same as default, but computed manually
-        # words = sentence.lower().replace('\n', ' ').split()
-        #words = word_tokenize(sentence)
 
         words = LMTZR.clean_corpus(sentence, rm_stop_words=self.rm_stop_words, lemm=self.lemm)
 
@@ -422,6 +420,8 @@ class FAQ:
         hits = np.zeros(len(self.questions))
         hits2 = np.zeros(len(self.questions))
         mask = np.full(len(self.questions), False)
+        diff_prediction_right = 0
+
         for i, row in enumerate(self.questions.iterrows()):
             c = TFIDF_Classifier(self.path_to_q)
             c.structure_data(test_data_percent=1, sents_idxs_to_leaveout=[i]) 
@@ -434,11 +434,35 @@ class FAQ:
 
             mask[i] = True
             hits += (cls_ids == cls_ids[am]) * mask
+
             # Second nearest neighbour
             am2 = np.argsort(cm)[-3]
             hits2 += (cls_ids == cls_ids[am2]) * (hits == False) * mask
             mask[i] = False
 
+
+            "didn't really help"
+            # def compare_ham_distance(sent, cls1, cls2):
+            #     c_in1 = 0
+            #     c_in2 = 0
+            #     for w in LMTZR.clean_corpus(sent):
+            #         if w in c.structured_list[cls1]:
+            #             c_in1 += 1
+            #         if w in c.structured_list[cls2]:
+            #             c_in2 += 1
+            #     if c_in1 >= c_in2:
+            #         return cls1
+            #     else:
+            #         return cls2
+
+            # if cm[am] < 0.7:
+            #     if compare_ham_distance(self.questions["question"][i], cls_ids[am], cls_ids[am2]) == cls_ids[i]:
+            #         diff_prediction_right += 1
+            # elif cls_ids[am] == cls_ids[i]:
+            #     diff_prediction_right += 1
+
+
         self.word_probs = copy_probs
         return round(hits.mean(), 3), round(hits2.mean(), 3)
+    # , diff_prediction_right/len(self.questions)
 

@@ -1,5 +1,8 @@
 import fasttext
 import numpy as np
+import argparse
+import os
+
 from tqdm import tqdm
 from dataclasses import dataclass
 from faq50_adapted import FAQ, extract_word_probs
@@ -48,14 +51,14 @@ class Tester:
 
 
     def fast_text_tests(self, model_path, path_to_q, path_to_a, path_to_save,
-                        modify_existing_xlsx_file=False,
                         mean=False, 
                         weighted=False,
                         weighted_qa=False,
                         weighted_by_tfidf=False
                         ):
         
-        if modify_existing_xlsx_file:
+        if os.path.exists(path_to_save):
+            print("Will add new columns or modify old ones in given <path_to_save>.xlsx file.")
             self.ft_results_df = pd.read_excel(path_to_save)
 
         stop_words_and_lemm = [(False, False), (True, False), (False, True), (True, True)]
@@ -190,29 +193,59 @@ class Tester:
 
             self.ft_results_df["Weighted_by_tfidf (disjunctive)"] = res2
 
-
         print(self.ft_results_df)
         self.ft_results_df.to_excel(path_to_save, index=False)
 
 
 
-if __name__ == "__main__":
-    # Given:
-    model_path = "models/cc.cs.300.bin"
-    path_to_q = "780_upv_questions/Q78_questions.xlsx"
-    path_to_a = "780_upv_questions/Q78_answers_no_tags.xlsx"
-    path_to_save_results = "test_results/fastText_tests_results.xlsx"
+parser = argparse.ArgumentParser()
+parser.add_argument("model_path", default=None, type=str, help="Path to .bin model file")
+parser.add_argument("path_to_q", default=None, type=str, help="path to .xlsx with questions")
+parser.add_argument("path_to_a", default=None, type=str, help="Path to .xlsx with answers")
+parser.add_argument("save_path", default=None, type=str, help="Path to .xlsx with answers")
 
+parser.add_argument("--mean", default=False, action=argparse.BooleanOptionalAction, help="Enable simple mean embedding test")
+parser.add_argument("--weighted", default=False, action=argparse.BooleanOptionalAction, help="Enable weighted mean embedding test")
+parser.add_argument("--weighted_qa", default=False, action=argparse.BooleanOptionalAction, help="Enable weighted test with corpus from q or/and a")
+parser.add_argument("--weighted_tfidf", default=False, action=argparse.BooleanOptionalAction, help="Enable weighting by TF-IDF test")
+
+
+if __name__ == "__main__":
+    args = parser.parse_args([] if "__file__" not in globals() else None)
 
     t = Tester()
-    # t.TFIDF_classifier_test(path_to_q)
-    # t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results)
-    t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results,
-                      modify_existing_xlsx_file=True,
-                      mean=True,
-                      weighted=True,
-                      weighted_qa=True,
-                      weighted_by_tfidf=False)
+    t.fast_text_tests(args.model_path, args.path_to_q, args.path_to_a, args.save_path,
+                      mean=args.mean,
+                      weighted=args.weighted,
+                      weighted_qa=args.weighted_qa,
+                      weighted_by_tfidf=args.weighted_tfidf
+                      )
 
 
+    # ********************** Or manually without command line *********************:
 
+    # # ----------------- Given small Q50 dataset:
+    # model_path = "models/cc.cs.300.bin"
+    # path_to_q = "upv_faq/Q50_questions.xlsx"
+    # path_to_a = "upv_faq/Q50_answers.xlsx"
+    # path_to_save_results = "test_results/results_on_small_dataset.xlsx"
+    # t = Tester()
+    # t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results,
+    #                 #   mean=True,
+    #                 #   weighted=True,
+    #                 #   weighted_qa=True,
+    #                 #   weighted_by_tfidf=True
+    #                   )
+
+    # # ----------------- Given Q78 dataset:
+    # model_path = "models/cc.cs.300.bin"
+    # path_to_q = "780_upv_questions/Q78_questions.xlsx"
+    # path_to_a = "780_upv_questions/Q78_answers_no_tags.xlsx"
+    # path_to_save_results = "test_results/fastText_tests_results.xlsx"
+    # t = Tester()
+    # t.fast_text_tests(model_path, path_to_q, path_to_a, path_to_save_results,
+    #                   mean=True,
+    #                   weighted=True,
+    #                   weighted_qa=True,
+    #                   weighted_by_tfidf=False)
+    
