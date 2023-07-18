@@ -49,7 +49,7 @@ To find the according class for a given sentence embedding we have two methods.
 2. For TF-IDF tests, being disjunctive means that for every query question, the TF-IDF matrix is calculated independently(not including this question). All disjunctive tests take much more time than basic ones and usually give a couple of percent lower accuracy.
 3. `weighted_qa` tests dependence on whether the word probabilities are taken from questions and/or answers corpuses. The results should not differ much.
 4. `sw` and `lemm` parameters indicate using stop words removal and word lemmatization.
-5. The cells of the result table are in the form: `f, s, t\* : α`, where *f* is the accuracy with the first guess, *s* is the second guess, when the first guess was wrong and optionally *t* is same logic. α is the best α parameter for this test, taken out of some predefined range.
+5. The cells of the result table are in the form: `f, s, t* : α`, where *f* is the accuracy with the first guess, *s* is the second guess, when the first guess was wrong and optionally *t* is same logic. α is the best α parameter for this test, taken out of some predefined range.
 6. The Q78 data tests run 15-20 minutes. However, there are 3 times more questions in the new Q78 dataset and I am currently waiting for it to finish. As I can see, it will take approximately 3-4 hours. Disjunctive tests take a lot of time; the code is not optimized.
 
 
