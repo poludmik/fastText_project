@@ -13,3 +13,6 @@ __pycache__/faq50_adapted.cpython-310.pyc
 .gitignore
 __pycache__/faq50.cpython-310.pyc
 __pycache__/tfidf_classifier.cpython-310.pyc
+__pycache__/topic_word_probs.cpython-310.pyc
+__pycache__/cs_lemmatizer.cpython-310.pyc
+data_preprocessing/__pycache__/expand_text.cpython-310.pyc
