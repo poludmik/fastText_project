@@ -17,11 +17,9 @@ if __name__ == "__main__":
     added_classes = set()
 
     for index, row in df.iterrows():
-
         expanded = expand_text(row["Question"]) # expand (a|b|c)
 
         for q in expanded:
-
             q_without_number = re.sub(r'^\d+\.', '', q, count=1)
             q_json.append({"question": q_without_number, "class": row["Class"]})
             # q_json.append({"question": q, "class": row["Class"]})
@@ -29,7 +27,6 @@ if __name__ == "__main__":
         if int(row["Class"]) not in added_classes:
             a_json.append({"answer": remove_tags(row["Answer"]), "class": row["Class"]})
             added_classes |= {int(row["Class"])}
-
 
     q_data = pd.DataFrame.from_records(q_json)
     a_data = pd.DataFrame.from_records(a_json)
