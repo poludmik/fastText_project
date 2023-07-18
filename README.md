@@ -1,6 +1,6 @@
 # Testing usage of FastText embeddings for answering FAQ
 
-## Main testing script - test_methods.py
+## Main testing script: `test_methods.py`
 
 Evaluates several approaches for the task based on the given questions-class pairs and a .bin model and outputs results to .xlsx file. Results achieved so far are in the `test_results` folder.
 
@@ -44,16 +44,18 @@ To find the according class for a given sentence embedding we have two methods.
 * **Cross match.** For each training question in the FAQ database find it's sentence embedding. Then, find the nearest neighbor to a query sentence using cosine similarity.
 * **Mean match.** For each class, create an average embedding and find the nearest neighbor from these *cluster centers*.
 
-## Notes to `test_methods` testing parameters
+## :open_book: Notes to `test_methods` testing parameters
 1. A weighted test is called *disjunctive(disj)* if the query question is not used in average sentence vectors (separated train/test data). The probabilities are still calculated, including the query question. 
 2. For TF-IDF tests, being disjunctive means that for every query question, the TF-IDF matrix is calculated independently(not including this question). All disjunctive tests take much more time than basic ones and usually give a couple of percent lower accuracy.
 3. `weighted_qa` tests dependence on whether the word probabilities are taken from questions and/or answers corpuses. The results should not differ much.
 4. `sw` and `lemm` parameters indicate using stop words removal and word lemmatization.
 5. The cells of the result table are in the form: `f, s, t* : α`, where *f* is the accuracy with the first guess, *s* is the second guess, when the first guess was wrong and optionally *t* is same logic. α is the best α parameter for this test, taken out of some predefined range.
 6. The Q78 data tests run 15-20 minutes. However, there are 3 times more questions in the new Q78 dataset and I am currently waiting for it to finish. As I can see, it will take approximately 3-4 hours. Disjunctive tests take a lot of time; the code is not optimized.
+7. There is also `similar_sent_tests.ipynb` notebook that could be more intuitive to understand the main parts of this repository.
 
 
 ## Main files
 * **faq50_adapted.py** contains most of the methods for creating and testing embeddings.
 * **test_methods.py** tests different parameters for faq50 as described above.
-* **tfidf_classifier.py** does TF-IDF operations. 
+* **tfidf_classifier.py** does TF-IDF operations.
+* **similar_sent_tests.ipynb** step by step developing notebook.
