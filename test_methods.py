@@ -77,6 +77,7 @@ class Tester:
                        str(mean_acc)+', '+str(mean_acc_sec),
                        str(f)+', '+str(s)+', '+str(t)]
                 self.ft_results_df['Mean_sent_embd: sw='+str(sw*1)+", lm="+str(lemm*1)] = res
+                self.ft_results_df.to_excel(path_to_save, index=False)
 
         if weighted:
             print("\nWeighted sentence embedding:")
@@ -108,6 +109,7 @@ class Tester:
                        str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
 
                 self.ft_results_df["Weighted_sent_embd: sw="+str(sw*1)+", lm="+str(lemm*1)] = res
+                self.ft_results_df.to_excel(path_to_save, index=False)
 
         if weighted_qa:
             print("\nWeighted sentence embedding with data from q/a:")
@@ -145,6 +147,7 @@ class Tester:
                        str(best_a_mean_disj.acc[0])+', '+str(best_a_mean_disj.acc[1])+', '+str(best_a_mean_disj.acc[2])+' : '+str(round(best_a_mean_disj.alpha, 2))]
 
                 self.ft_results_df["Weighted_data_from q="+str(a)+", a="+str(b)+", sw=1, lm=1"] = res
+                self.ft_results_df.to_excel(path_to_save, index=False)
 
         if weighted_by_tfidf:
             print("Weighted by TF-IDF:")
@@ -192,6 +195,7 @@ class Tester:
                        str(f)+', '+str(s)+', '+str(t)+' : '+str(round(best_a_mean.alpha, 2))]
 
             self.ft_results_df["Weighted_by_tfidf (disjunctive)"] = res2
+            self.ft_results_df.to_excel(path_to_save, index=False)
 
         print(self.ft_results_df)
         self.ft_results_df.to_excel(path_to_save, index=False)
