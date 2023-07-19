@@ -179,7 +179,7 @@ class Tester:
             self.ft_results_df["Weighted_by_tfidf (q included)"] = res
 
 
-            print(f"Now testing disjunctive cross and mean with best alphas.\nIt will take 4-6 minutes.")
+            print(f"Now testing disjunctive cross and mean with best alphas.\nIt takes 4-6 minutes on Q78 and ~30 minutes on Q76.")
             faq = FAQ(model, path_to_q, path_to_a, probs=probs, alpha=best_a_cross.alpha, rm_stop_words=True, lemm=True,
                                             tfidf_weighting=True)
             acc, acc_sec = faq.cross_match_test_tfidf_disj()
