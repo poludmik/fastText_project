@@ -24,43 +24,38 @@ class WEED(FAQ):
                  lemm=False, 
                  tfidf_weighting=False):
         super().__init__(model, questions_path, answers_path, probs, alpha, compressed, rm_stop_words, lemm, tfidf_weighting)
-        self.word_embs_db = [np.array([self.get_w_vec(w) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)]) for q in self.questions["question"]]
+        self.word_embs_db = [np.array([self.get_w_vec(w)/(np.linalg.norm(self.get_w_vec(w))+1e-9) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)]) for q in self.questions["question"]]
         
         def word_probability(word):
             if word in self.word_probs.keys():
                 return self.word_probs[word]
-            return 0.0
+            # return 0
+            return min(self.word_probs.items(), key=lambda x: x[1])[1]
         
         self.word_probs_db = [np.array([word_probability(w) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)])[:, np.newaxis] for q in self.questions["question"]]
 
+
     def nearest_question_test_weed(self, sw=False, lm=False):
-        # s1 = "jaké informace najdu ve Věstníku"
-        # s2 = "jaké jablko ve najdu Věstníku"
-        # print(s1)
-        # print(s2, "\n")
         cm = np.zeros((len(self.word_embs_db), len(self.word_embs_db))) # 2000 x 2000
 
         for i, sent_embs in enumerate(self.word_embs_db):
             for j, sent_ref_embs in enumerate(self.word_embs_db):
-                # cm[i, j] = self.ed_between_two_sentences(sent_embs, sent_ref_embs)
                 cm[i, j] = self.distance(sent_embs, sent_ref_embs, self.word_probs_db[i], self.word_probs_db[j])
 
+        np.fill_diagonal(cm, 0.0)
+
+        am = np.argsort(cm, axis=1)[:, -1]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
-        am = np.argsort(cm, axis=1)[:, -2]
-        # print(cls_ids[am])
         hits = cls_ids == cls_ids[am]
         acc = hits.mean()
         return acc
 
 
     def distance(self, sent_embs1, sent_embs2, s1_probs=1, s2_probs=1):
-        multiplied = (s1_probs*sent_embs1) @ (s2_probs*sent_embs2).T
+        multiplied = (s1_probs/(self.alpha+s1_probs) * sent_embs1) @ (s2_probs/(self.alpha+s2_probs) * sent_embs2).T
+        # multiplied = (sent_embs1 / (self.alpha + s1_probs)) @ (sent_embs2 / (self.alpha + s2_probs)).T
         max_for_each_w1 = np.max(multiplied, axis=1)
         return np.mean(max_for_each_w1)
-    
-        # max_for_each_w1 = np.max(sent_embs1 @ sent_embs2.T, axis=1) # Does 0.218 accuaracy
-        # #  / np.linalg.norm(max_for_each_w1)
-        # return np.sum(max_for_each_w1) / sent_embs1.shape[0]
 
 
 
