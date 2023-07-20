@@ -9,6 +9,8 @@ from faq50_adapted import FAQ, extract_word_probs
 from topic_word_probs import *
 from tfidf_classifier import TFIDF_Classifier
 from cs_lemmatizer import *
+from weed import *
+
 
 
 @dataclass
@@ -54,7 +56,8 @@ class Tester:
                         mean=False, 
                         weighted=False,
                         weighted_qa=False,
-                        weighted_by_tfidf=False
+                        weighted_by_tfidf=False,
+                        weed=False
                         ):
         
         if os.path.exists(path_to_save):
@@ -197,6 +200,60 @@ class Tester:
             self.ft_results_df["Weighted_by_tfidf (disjunctive)"] = res2
             self.ft_results_df.to_excel(path_to_save, index=False)
 
+        if weed:
+            print("Word Embeddings based Edit Distance(similarity):")
+
+            rm_sw = True
+            lm = True
+
+            best_a = AlphaAcc(0, [0])
+            best_s = 1
+
+            # probs from q/a
+            print("probs from q/a:")
+            probs, _ = count_word_probs_in_corpuses(path_to_questions=path_to_q)
+            for a in tqdm(np.arange(0.0, 1, 0.1)): # 10 different alphas
+                for s in np.arange(0.0, 1.0, 0.1):
+                    weed = WEED(model, path_to_q, path_to_a, probs=probs, alpha=a, 
+                                lemm=lm, rm_stop_words=rm_sw, sigma=s, 
+                                tfidf_weighting=False)
+                    acc = weed.nearest_question_test_weed()
+                    if acc >= best_a.acc[0]:
+                        best_a = AlphaAcc(a, [acc])
+                        best_s = s
+            print(f"best_acc={best_a.acc[0]}, best_a={best_a.alpha}, best_s={best_s}")
+            res = [str(round(best_a.acc[0], 2)) + " : a=" + str(round(best_a.alpha, 2)) + ", s="+str(round(best_s, 2)), 
+                   "",
+                   ""]
+            self.ft_results_df["WordEmbEditDist with p from q/a"] = res
+            self.ft_results_df.to_excel(path_to_save, index=False)
+
+
+            # probs from tf-idf:
+            print("probs from tf-idf:")
+            best_a = AlphaAcc(0, [0])
+            best_s = 1
+            c = TFIDF_Classifier(path_to_q, rm_sw, lm)
+            test_data = c.structure_data(test_data_percent=1) 
+            tfidf_matrix, feat_names = c.get_TFIDF_matrix()
+            probs = get_TFIDF_threshold_probabilities(tfidf_matrix, feat_names)
+            for a in tqdm(np.arange(0.05, 1.05, 0.1)): # 10 different alphas
+                for s in np.arange(0.0, 1.0, 0.1):
+                    weed = WEED(model, path_to_q, path_to_a, probs=probs, alpha=a, 
+                                lemm=lm, rm_stop_words=rm_sw, sigma=s, 
+                                tfidf_weighting=True)
+                    acc = weed.nearest_question_test_weed()
+                    if acc >= best_a.acc[0]:
+                        best_a = AlphaAcc(a, [acc])
+                        best_s = s
+            print(f"best_acc={best_a.acc[0]}, best_a={best_a.alpha}, best_s={best_s}")
+            res = [str(round(best_a.acc[0], 2)) + " : a=" + str(round(best_a.alpha, 2)) + ", s="+str(round(best_s, 2)), 
+                   "",
+                   ""]
+
+            self.ft_results_df["WordEmbEditDist with p from tf-idf"] = res
+            self.ft_results_df.to_excel(path_to_save, index=False)
+
         print(self.ft_results_df)
         self.ft_results_df.to_excel(path_to_save, index=False)
 
@@ -212,6 +269,7 @@ parser.add_argument("--mean", default=False, action=argparse.BooleanOptionalActi
 parser.add_argument("--weighted", default=False, action=argparse.BooleanOptionalAction, help="Enable weighted mean embedding test")
 parser.add_argument("--weighted_qa", default=False, action=argparse.BooleanOptionalAction, help="Enable weighted test with corpus from q or/and a")
 parser.add_argument("--weighted_tfidf", default=False, action=argparse.BooleanOptionalAction, help="Enable weighting by TF-IDF test")
+parser.add_argument("--weed", default=False, action=argparse.BooleanOptionalAction, help="Enable word embedding based on edit distance tests")
 
 
 if __name__ == "__main__":
@@ -222,7 +280,8 @@ if __name__ == "__main__":
                       mean=args.mean,
                       weighted=args.weighted,
                       weighted_qa=args.weighted_qa,
-                      weighted_by_tfidf=args.weighted_tfidf
+                      weighted_by_tfidf=args.weighted_tfidf,
+                      weed=args.weed
                       )
 
 
