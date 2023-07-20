@@ -15,13 +15,15 @@ from cs_lemmatizer import *
 
 
 class TFIDF_Classifier:
-    def __init__(self, questions_path):
+    def __init__(self, questions_path, rm_sw=True, lm=True):
         self.questions_path = questions_path
         self.structured_list = None
         self.TFIDF_matrix = None
         self.feature_names = None
+        self.rm_sw = rm_sw
+        self.lm = lm
 
-    def leave_one_out_test(self, rm_stop_words=True, lemm=True):
+    def leave_one_out_test(self):
         df = pd.read_excel(self.questions_path)
         n_got_right = 0
         for index, row in tqdm(df.iterrows()):
@@ -32,7 +34,7 @@ class TFIDF_Classifier:
             for index2, row2 in df.iterrows():
                 if index == index2:
                     continue
-                words = LMTZR.clean_corpus(row2['question'], rm_stop_words, lemm)
+                words = LMTZR.clean_corpus(row2['question'], self.rm_sw, self.lm)
                 self.structured_list[int(row2['class'])] += " " + ' '.join(words)
             self.get_TFIDF_matrix()
             if self.classify_sentence(sentence) == true_class:
@@ -57,7 +59,7 @@ class TFIDF_Classifier:
         for index, row in df_subset.iterrows():
             if index in sents_idxs_to_leaveout: # for leave-one-out mean match test
                 continue
-            lemmatized = LMTZR.clean_corpus(row['question'])
+            lemmatized = LMTZR.clean_corpus(row['question'], self.rm_sw, self.lm)
             self.structured_list[int(row['class'])] += " " + ' '.join(lemmatized)
 
         test_data = []
@@ -79,7 +81,7 @@ class TFIDF_Classifier:
         classified_c = None
         for c in range(self.TFIDF_matrix.shape[0]): # classes
             p = 0
-            words = LMTZR.clean_corpus(sentence)
+            words = LMTZR.clean_corpus(sentence, self.rm_sw, self.lm)
             for word in words:
                 w = self.lemmatize_cs_w(word)
                 if w not in self.feature_names:
