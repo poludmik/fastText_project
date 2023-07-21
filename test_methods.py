@@ -212,7 +212,7 @@ class Tester:
             # probs from q/a
             print("probs from q/a:")
             probs, _ = count_word_probs_in_corpuses(path_to_questions=path_to_q)
-            for a in tqdm(np.arange(0.0, 1, 0.1)): # 10 different alphas
+            for a in tqdm(np.arange(0.0, 1.0, 0.1)):
                 for s in np.arange(0.0, 1.0, 0.1):
                     weed = WEED(model, path_to_q, path_to_a, probs=probs, alpha=a, 
                                 lemm=lm, rm_stop_words=rm_sw, sigma=s, 
@@ -222,7 +222,7 @@ class Tester:
                         best_a = AlphaAcc(a, [acc])
                         best_s = s
             print(f"best_acc={best_a.acc[0]}, best_a={best_a.alpha}, best_s={best_s}")
-            res = [str(round(best_a.acc[0], 2)) + " : a=" + str(round(best_a.alpha, 2)) + ", s="+str(round(best_s, 2)), 
+            res = [str(round(best_a.acc[0], 3)) + " : a=" + str(round(best_a.alpha, 2)) + ", s="+str(round(best_s, 2)), 
                    "",
                    ""]
             self.ft_results_df["WordEmbEditDist with p from q/a"] = res
@@ -237,8 +237,8 @@ class Tester:
             test_data = c.structure_data(test_data_percent=1) 
             tfidf_matrix, feat_names = c.get_TFIDF_matrix()
             probs = get_TFIDF_threshold_probabilities(tfidf_matrix, feat_names)
-            for a in tqdm(np.arange(0.05, 1.05, 0.1)): # 10 different alphas
-                for s in np.arange(0.0, 1.0, 0.1):
+            for a in tqdm(np.arange(0.005, 0.4005, 0.1)): # 10 different alphas, alpha=0 means no tfidf weighting
+                for s in np.arange(0.2, 1.0, 0.1):
                     weed = WEED(model, path_to_q, path_to_a, probs=probs, alpha=a, 
                                 lemm=lm, rm_stop_words=rm_sw, sigma=s, 
                                 tfidf_weighting=True)
@@ -247,7 +247,7 @@ class Tester:
                         best_a = AlphaAcc(a, [acc])
                         best_s = s
             print(f"best_acc={best_a.acc[0]}, best_a={best_a.alpha}, best_s={best_s}")
-            res = [str(round(best_a.acc[0], 2)) + " : a=" + str(round(best_a.alpha, 2)) + ", s="+str(round(best_s, 2)), 
+            res = [str(round(best_a.acc[0], 3)) + " : a=" + str(round(best_a.alpha, 2)) + ", s="+str(round(best_s, 2)), 
                    "",
                    ""]
 
