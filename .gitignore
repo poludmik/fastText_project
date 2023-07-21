@@ -16,3 +16,14 @@ __pycache__/tfidf_classifier.cpython-310.pyc
 __pycache__/topic_word_probs.cpython-310.pyc
 __pycache__/cs_lemmatizer.cpython-310.pyc
 data_preprocessing/__pycache__/expand_text.cpython-310.pyc
+cuda-repo-wsl-ubuntu-12-2-local_12.2.0-1_amd64.deb
+.gitignore
+.gitignore
+__pycache__/weed.cpython-310.pyc
+.gitignore
+bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1.tar.gz
+bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/pytorch_model.bin
+bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/vocab.txt
+.gitignore
+bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/config.json
+bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/tokenizer_config.json
