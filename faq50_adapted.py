@@ -15,6 +15,7 @@ import os
 from cs_lemmatizer import *
 from tfidf_classifier import *
 from topic_word_probs import *
+from bert_like_models.slavic_bert_tests import SlavicBERT
 
 
 def extract_word_probs(model_path: str, corpus_size: int = 4.1e9):
@@ -44,7 +45,8 @@ class FAQ:
             compressed=False,
             rm_stop_words=False,
             lemm=False,
-            tfidf_weighting=False
+            tfidf_weighting=False,
+            slBert=False
         ):
         self.model = model
         self.answers = None
@@ -55,9 +57,13 @@ class FAQ:
         self.lemm = lemm
         self.path_to_q = questions_path
         self.tfidf_weighting = tfidf_weighting
+        self.slBert = slBert
 
         if compressed:
             self.get_w_vec = self.model.word_vec
+        elif slBert:
+            self.get_w_vec = None
+            self.sentence_embedding = self.SlavicBERT_mean_sentence_embedding
         else:
             self.get_w_vec = self.model.get_word_vector
 
@@ -77,7 +83,7 @@ class FAQ:
             raise "Unsupported data file"
 
         if alpha is not None and probs is not None:
-            self.sentence_embedding = self.weighted_sentence_embedding       
+            self.sentence_embedding = self.weighted_sentence_embedding    
 
         # Create embedding database - matrix of embedding vectors for each question
         self.db = np.array([self.sentence_embedding(q) for q in self.questions["question"]])
@@ -97,6 +103,9 @@ class FAQ:
         # Unsuported by compressed models, may be removed
         embedding = self.model.get_sentence_vector(sentence.lower().replace('\n', ' '))
         return embedding/np.linalg.norm(embedding)
+    
+    def SlavicBERT_mean_sentence_embedding(self, sentence):
+        return self.model.get_mean_sentence_embedding(sentence, sw=self.rm_stop_words, lm=self.lemm)
 
     def mean_sentence_embedding(self, sentence):
         # Same as default, but computed manually

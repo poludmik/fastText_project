@@ -24,8 +24,9 @@ class WEED(FAQ):
                  compressed=False, 
                  rm_stop_words=False, 
                  lemm=False, 
-                 tfidf_weighting=False):
-        super().__init__(model, questions_path, answers_path, probs, alpha, compressed, rm_stop_words, lemm, tfidf_weighting)
+                 tfidf_weighting=False,
+                 slBert=False):
+        super().__init__(model, questions_path, answers_path, probs, alpha, compressed, rm_stop_words, lemm, tfidf_weighting, slBert)
         
         self.sigma = sigma
 
@@ -37,8 +38,12 @@ class WEED(FAQ):
 
         questions = [q for q in self.questions["question"]]
         self.tokenized_sents = [LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm) for q in questions]
-        self.word_embs_db = [np.array([self.get_w_vec(w)/(np.linalg.norm(self.get_w_vec(w))+1e-9) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)]) for q in questions]
-        self.word_probs_db = [np.array([word_probability(w) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)])[:, np.newaxis] for q in questions]
+        if slBert:
+            self.word_embs_db = [np.array(model.get_mean_sentence_embedding(q, mean=False)) for q in questions]
+            self.word_probs_db = [1 for q in questions]
+        else:
+            self.word_embs_db = [np.array([self.get_w_vec(w)/(np.linalg.norm(self.get_w_vec(w))+1e-9) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)]) for q in questions]
+            self.word_probs_db = [np.array([word_probability(w) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)])[:, np.newaxis] for q in questions]
         # print("Average number of words in a tokenized sentence:", round(np.mean(np.array([len(x) for x in self.word_probs_db])), 3))
 
 
@@ -62,19 +67,24 @@ class WEED(FAQ):
         return acc
 
     def semantic_similarity(self, sent_embs1, sent_embs2, s1_probs=1, s2_probs=1):
-        # multiplied = (sent_embs1) @ (sent_embs2).T
+        
         if self.tfidf_weighting:
             multiplied = (s1_probs/(self.alpha+s1_probs) * sent_embs1) @ (s2_probs/(self.alpha+s2_probs) * sent_embs2).T
+        elif self.slBert:
+            multiplied = (sent_embs1) @ (sent_embs2).T
         else:
             multiplied = (1/(self.alpha+s1_probs) * sent_embs1) @ (1/(self.alpha+s2_probs) * sent_embs2).T
+
         max_for_each_w1 = np.max(multiplied, axis=1)
         ss = np.mean(max_for_each_w1)
 
-        # multiplied_2 = (sent_embs2) @ (sent_embs1).T
         if self.tfidf_weighting:
             multiplied_2 = (s2_probs/(self.alpha+s2_probs) * sent_embs2) @ (s1_probs/(self.alpha+s1_probs) * sent_embs1).T
+        elif self.slBert:
+            multiplied_2 = (sent_embs2) @ (sent_embs1).T
         else:
             multiplied_2 = (1/(self.alpha+s2_probs) * sent_embs2) @ (1/(self.alpha+s1_probs) * sent_embs1).T
+
         max_for_each_w1_2 = np.max(multiplied_2, axis=1)
         ss_2 = np.mean(max_for_each_w1_2)
 

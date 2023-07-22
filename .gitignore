@@ -1,4 +1,3 @@
-.idea/.gitignore
 .idea/misc.xml
 .idea/modules.xml
 .idea/my_src.iml
@@ -27,3 +26,6 @@ bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/vocab.txt
 .gitignore
 bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/config.json
 bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/tokenizer_config.json
+bert_like_models/__pycache__/__init__.cpython-310.pyc
+.gitignore
+bert_like_models/__pycache__/slavic_bert_tests.cpython-310.pyc
