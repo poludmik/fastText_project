@@ -43,7 +43,7 @@ class TFIDF_Classifier:
         return round(n_got_right / len(df.index), 3)
 
 
-    def structure_data(self, test_data_percent=None, sents_idxs_to_leaveout=[]):
+    def structure_data(self, test_data_percent=None, sents_idxs_to_leaveout=[], tokenizer=None):
         i = 0
         df = pd.read_excel(self.questions_path)
 
@@ -59,7 +59,10 @@ class TFIDF_Classifier:
         for index, row in df_subset.iterrows():
             if index in sents_idxs_to_leaveout: # for leave-one-out mean match test
                 continue
-            lemmatized = LMTZR.clean_corpus(row['question'], self.rm_sw, self.lm)
+            if tokenizer is None:
+                lemmatized = LMTZR.clean_corpus(row['question'], self.rm_sw, self.lm)
+            else:
+                lemmatized = tokenizer(row['question'])
             self.structured_list[int(row['class'])] += " " + ' '.join(lemmatized)
 
         test_data = []

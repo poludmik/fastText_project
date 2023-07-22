@@ -17,16 +17,17 @@ def remove_tags():
     ans_df.to_excel("Q78_answers_no_tags.xlsx")
 
 
-def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path_to_answers=None):
+def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path_to_answers=None, tokenizer=LMTZR.clean_corpus):
+    # LMTZR.clean_corpus has sw=lm=True as default argument values.
     words = []
     if path_to_answers:
         ans_df = pd.read_excel(path_to_answers)
         corpus = ans_df['answer'].str.cat(sep="\n")
-        words += LMTZR.clean_corpus(corpus)    
+        words += tokenizer(corpus)    
     if path_to_questions:
         q_df = pd.read_excel(path_to_questions)
         corpus = q_df['question'].str.cat(sep="\n")
-        words += LMTZR.clean_corpus(corpus)
+        words += tokenizer(corpus)
     
     probs = {}
     for word in words:

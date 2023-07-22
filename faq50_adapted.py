@@ -120,16 +120,19 @@ class FAQ:
     def weighted_sentence_embedding(self, sentence):
         # Computes weighted sentence embedding acoording to: https://openreview.net/pdf?id=SyK00v5xx
         
-        words = LMTZR.clean_corpus(sentence, rm_stop_words=self.rm_stop_words, lemm=self.lemm)
-
         def word_probability(word):
             if word in self.word_probs.keys():
                 return self.word_probs[word]
             return min(self.word_probs.items(), key=lambda x: x[1])[1]
             # return 0 # also works, but assigning some number works better
 
-        #words = word_tokenize(sentence)
-        wes = np.array([self.get_w_vec(w) for w in words])
+        if self.slBert:
+            words = self.model.tokenizer.tokenize(sentence)
+            wes = self.model.get_mean_sentence_embedding(sentence, mean=False)
+        else:
+            words = LMTZR.clean_corpus(sentence, rm_stop_words=self.rm_stop_words, lemm=self.lemm)
+            wes = np.array([self.get_w_vec(w) for w in words])
+        
         probs = np.array([word_probability(w) for w in words])[:, np.newaxis]
         wes /= np.linalg.norm(wes, axis=1)[:, np.newaxis] + 1e-9
 
