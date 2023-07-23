@@ -40,7 +40,7 @@ class WEED(FAQ):
         self.tokenized_sents = [LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm) for q in questions]
         if slBert:
             self.word_embs_db = [np.array(model.get_mean_sentence_embedding(q, mean=False)) for q in questions]
-            self.word_probs_db = [1 for q in questions]
+            self.word_probs_db = [np.array([word_probability(w) for w in self.model.tokenizer.tokenize(q)])[:, np.newaxis] for q in questions]
         else:
             self.word_embs_db = [np.array([self.get_w_vec(w)/(np.linalg.norm(self.get_w_vec(w))+1e-9) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)]) for q in questions]
             self.word_probs_db = [np.array([word_probability(w) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)])[:, np.newaxis] for q in questions]

@@ -8,7 +8,7 @@ from cs_lemmatizer import LMTZR
 # print(torch.cuda.is_available())
 
 
-class SlavicBERT:
+class SlavicBERT():
     def __init__(self, 
                  dir_to_models, 
                  ):
