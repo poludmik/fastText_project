@@ -39,8 +39,8 @@ class WEED(FAQ):
         questions = [q for q in self.questions["question"]]
         self.tokenized_sents = [LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm) for q in questions]
         if slBert:
-            self.word_embs_db = [np.array(model.get_mean_sentence_embedding(q, mean=False)) for q in questions]
-            self.word_probs_db = [np.array([word_probability(w) for w in self.model.tokenizer.tokenize(q)])[:, np.newaxis] for q in questions]
+            self.word_embs_db = [np.array(model.get_mean_sentence_embedding(q, sw=rm_stop_words, lm=lemm, mean=False)) for q in questions]
+            self.word_probs_db = [1 for q in questions]
         else:
             self.word_embs_db = [np.array([self.get_w_vec(w)/(np.linalg.norm(self.get_w_vec(w))+1e-9) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)]) for q in questions]
             self.word_probs_db = [np.array([word_probability(w) for w in LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm)])[:, np.newaxis] for q in questions]
@@ -54,14 +54,13 @@ class WEED(FAQ):
             for j, sent_ref_embs in enumerate(self.word_embs_db):
                 # cm[i, j] = self.ed_between_two_sentences(sent_embs, sent_ref_embs) # WED algorithm, slow
                 ss = self.semantic_similarity(sent_embs, sent_ref_embs, self.word_probs_db[i], self.word_probs_db[j])
-                wos = self.word_order_similarity(self.tokenized_sents[i], self.tokenized_sents[j])
-                cm[i, j] = self.sigma * ss + (1 - self.sigma) * wos
+                # wos = self.word_order_similarity(self.tokenized_sents[i], self.tokenized_sents[j])
+                cm[i, j] = self.sigma * ss # + (1 - self.sigma) * wos
 
         np.fill_diagonal(cm, -np.inf)
 
         am = np.argsort(cm, axis=1)[:, -1]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
-        # print(cls_ids[am])
         hits = cls_ids == cls_ids[am]
         acc = hits.mean()
         return acc
@@ -78,17 +77,18 @@ class WEED(FAQ):
         max_for_each_w1 = np.max(multiplied, axis=1)
         ss = np.mean(max_for_each_w1)
 
-        if self.tfidf_weighting:
-            multiplied_2 = (s2_probs/(self.alpha+s2_probs) * sent_embs2) @ (s1_probs/(self.alpha+s1_probs) * sent_embs1).T
-        elif self.slBert:
-            multiplied_2 = (sent_embs2) @ (sent_embs1).T
-        else:
-            multiplied_2 = (1/(self.alpha+s2_probs) * sent_embs2) @ (1/(self.alpha+s1_probs) * sent_embs1).T
+        # if self.tfidf_weighting:
+        #     multiplied_2 = (s2_probs/(self.alpha+s2_probs) * sent_embs2) @ (s1_probs/(self.alpha+s1_probs) * sent_embs1).T
+        # elif self.slBert:
+        #     multiplied_2 = (sent_embs2) @ (sent_embs1).T
+        # else:
+        #     multiplied_2 = (1/(self.alpha+s2_probs) * sent_embs2) @ (1/(self.alpha+s1_probs) * sent_embs1).T
 
-        max_for_each_w1_2 = np.max(multiplied_2, axis=1)
-        ss_2 = np.mean(max_for_each_w1_2)
+        # max_for_each_w1_2 = np.max(multiplied_2, axis=1)
+        # ss_2 = np.mean(max_for_each_w1_2)
 
-        return (ss + ss_2) / 2
+        return ss
+        # return (ss + ss_2) / 2
     
     def word_order_similarity(self, sent1_t, sent2_t):
         union = list(set(sent1_t + sent2_t))

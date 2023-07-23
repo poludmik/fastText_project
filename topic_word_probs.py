@@ -22,20 +22,22 @@ def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path
     words = []
     if path_to_answers:
         ans_df = pd.read_excel(path_to_answers)
-        corpus = ans_df['answer'].str.cat(sep="\n")
+        corpus = ('[CLS] ' + q_df['answer'].astype(str) + " [SEP]").str.cat(sep="\n")
+        if "[CLS]" not in corpus:
+            corpus = "[CLS] " + corpus + " [SEP]"
         words += tokenizer(corpus)    
     if path_to_questions:
         q_df = pd.read_excel(path_to_questions)
-        corpus = q_df['question'].str.cat(sep="\n")
+        corpus = ('[CLS] ' + q_df['question'].astype(str) + " [SEP]").str.cat(sep="\n")
         words += tokenizer(corpus)
     
     probs = {}
     for word in words:
-        word = word.strip('.')
-        if word in probs.keys():
-            probs[word] += 1
+        word2 = word.strip('.')
+        if word2 in probs.keys():
+            probs[word2] += 1
         else:
-            probs[word] = 1
+            probs[word2] = 1
 
     keys_to_remove = []
     for key in probs.keys():
