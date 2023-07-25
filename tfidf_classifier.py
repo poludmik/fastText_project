@@ -86,10 +86,9 @@ class TFIDF_Classifier:
             p = 0
             words = LMTZR.clean_corpus(sentence, self.rm_sw, self.lm)
             for word in words:
-                w = self.lemmatize_cs_w(word)
-                if w not in self.feature_names:
+                if word not in self.feature_names:
                     continue
-                p += self.TFIDF_matrix[c, np.where(self.feature_names == w)[0][0]]
+                p += self.TFIDF_matrix[c, np.where(self.feature_names == word)[0][0]]
             p /= len(words)
             if p > max_p:
                 max_p = p

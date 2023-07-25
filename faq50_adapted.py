@@ -124,7 +124,7 @@ class FAQ:
             if word in self.word_probs.keys():
                 return self.word_probs[word]
             return min(self.word_probs.items(), key=lambda x: x[1])[1]
-            # return 0 # also works, but assigning some number works better
+            # return 0 # also works, but assigning some number seems to work better
 
         if self.slBert:
             words = self.model.tokenizer.tokenize(sentence)
@@ -216,6 +216,11 @@ class FAQ:
         # A question is succesfully matched, if its second highest similarity is with a question of the same class
         # Computes accuracy as the ratio of succesfull matches
         cm = self.db @ self.db.T
+
+        # Would be better with np.fill_diagonal, but due to ambiguous questions, 
+        # some might have similarity bigger with another question; shouldn't really matter.
+        # np.fill_diagonal(cm, np.inf) 
+
         am = np.argsort(cm, axis=1)[:, -2]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
         hits = cls_ids == cls_ids[am]

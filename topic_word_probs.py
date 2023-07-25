@@ -17,18 +17,19 @@ def remove_tags():
     ans_df.to_excel("Q78_answers_no_tags.xlsx")
 
 
-def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path_to_answers=None, tokenizer=LMTZR.clean_corpus):
+def count_word_probs_in_corpuses(path_to_save=None, 
+                                 path_to_questions=None, 
+                                 path_to_answers=None, 
+                                 tokenizer=LMTZR.clean_corpus):
     # LMTZR.clean_corpus has sw=lm=True as default argument values.
     words = []
     if path_to_answers:
         ans_df = pd.read_excel(path_to_answers)
-        corpus = ('[CLS] ' + q_df['answer'].astype(str) + " [SEP]").str.cat(sep="\n")
-        if "[CLS]" not in corpus:
-            corpus = "[CLS] " + corpus + " [SEP]"
+        corpus = (ans_df['answer'].astype(str)).str.cat(sep="\n")
         words += tokenizer(corpus)    
     if path_to_questions:
         q_df = pd.read_excel(path_to_questions)
-        corpus = ('[CLS] ' + q_df['question'].astype(str) + " [SEP]").str.cat(sep="\n")
+        corpus = (q_df['question'].astype(str)).str.cat(sep="\n")
         words += tokenizer(corpus)
     
     probs = {}
@@ -41,8 +42,8 @@ def count_word_probs_in_corpuses(path_to_save=None, path_to_questions=None, path
 
     keys_to_remove = []
     for key in probs.keys():
-        if probs[key] < 5:
-            keys_to_remove.append(key)
+        # if probs[key] < 5:
+        #     keys_to_remove.append(key)
         probs[key] /= len(words)
     for k in keys_to_remove:
         probs.pop(k)
@@ -60,6 +61,24 @@ def combine_dicts(a, b, save_path=None):
         with open(save_path, "w") as f:
             json.dump(combined_dict, f)
     return combined_dict
+
+
+def general_to_corpus_probs(dict1_c, dict2_g):
+    new_dict = {}
+    filter_words = ['"']
+    for key in dict1_c.keys():
+        if key in filter_words:
+            continue
+        if key in dict2_g:
+            new_dict[key] = dict2_g[key] / dict1_c[key]
+        else:
+            new_dict[key] = dict1_c[key]
+
+    max_value = max(new_dict.values())
+    for key in new_dict.keys():
+        new_dict[key] /= max_value # to normalize to [0, 1]
+
+    return new_dict
 
 
 def get_TFIDF_threshold_probabilities(tfidf_matrix, feature_names):

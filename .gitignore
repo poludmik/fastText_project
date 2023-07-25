@@ -29,3 +29,6 @@ bert_like_models/models/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/tokenizer_config
 bert_like_models/__pycache__/__init__.cpython-310.pyc
 .gitignore
 bert_like_models/__pycache__/slavic_bert_tests.cpython-310.pyc
+topic_word_probs.py
+bert_like_models/__pycache__/robeczech.cpython-310.pyc
+bert_like_models/__pycache__/bert_base.cpython-310.pyc
