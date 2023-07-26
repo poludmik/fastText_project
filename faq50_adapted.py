@@ -294,7 +294,7 @@ class FAQ:
     def match(self, question):
         matched_q = self.questions['question'][self.identify(question)]
         #print(f"Matched question: {matched_q}")
-        return matched_q
+        return matched_q, self.questions['class'][self.identify(question)]
 
     def answer(self, question):
         if self.answers is None:

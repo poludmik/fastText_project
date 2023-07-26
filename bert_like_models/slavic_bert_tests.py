@@ -20,6 +20,10 @@ class SlavicBERT():
         self.model = BertModel.from_pretrained(dir_to_models + "/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/pytorch_model.bin", 
                                           config=self.config,
                                           )
+        
+        # self.qa_model = BertForQuestionAnswering.from_pretrained(dir_to_models + "/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/pytorch_model.bin", 
+        #                                   config=self.config,
+        #                                   )
 
         # Tokenizer
         self.vocab_path = dir_to_models + "/bg_cs_pl_ru_cased_L-12_H-768_A-12_pt_v1/vocab.txt"

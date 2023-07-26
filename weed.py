@@ -35,9 +35,23 @@ class WEED(FAQ):
                 return self.word_probs[word]
             # return 0
             return min(self.word_probs.items(), key=lambda x: x[1])[1]
+            
+        self.tokenized_answers = []
+        if answers_path and slBert:
+            df = pd.read_excel(answers_path)
+            column_data = df['answer'].tolist()
+            classes = df['class'].tolist()
+            self.word_embs_db_answers = []
+            already_have = set()
+            for i, row in enumerate(column_data):
+                if classes[i] in already_have:
+                    continue
+                already_have |= {classes[i]}
+                self.tokenized_answers.append(LMTZR.clean_corpus(row, rm_stop_words=rm_stop_words, lemm=lemm))
+                self.word_embs_db_answers.append(model.get_mean_sentence_embedding(row, mean=False))
 
         questions = [q for q in self.questions["question"]]
-        self.tokenized_sents = [LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm) for q in questions]
+        self.tokenized_questions = [LMTZR.clean_corpus(q, rm_stop_words=rm_stop_words, lemm=lemm) for q in questions]
         if slBert:
             self.word_embs_db = [np.array(model.get_mean_sentence_embedding(q, sw=rm_stop_words, lm=lemm, mean=False)) for q in questions]
             self.word_probs_db = [1 for q in questions]
@@ -47,23 +61,35 @@ class WEED(FAQ):
         # print("Average number of words in a tokenized sentence:", round(np.mean(np.array([len(x) for x in self.word_probs_db])), 3))
 
 
-    def nearest_question_test_weed(self):
-        cm = np.zeros((len(self.word_embs_db), len(self.word_embs_db))) # n_of_questions x n_of_questions
+    def nearest_question_test_weed(self, with_answers=False):
+        if with_answers:
+            cm = np.zeros((len(self.word_embs_db), len(self.word_embs_db_answers))) # n_of_questions x n_of_answers
+            second_db = self.word_embs_db_answers
+            second_tokenized = self.tokenized_answers
+        else:
+            cm = np.zeros((len(self.word_embs_db), len(self.word_embs_db))) # n_of_questions x n_of_questions
+            second_db = self.word_embs_db
+            second_tokenized = self.tokenized_questions
 
         for i, sent_embs in enumerate(self.word_embs_db):
-            for j, sent_ref_embs in enumerate(self.word_embs_db):
+            for j, sent_ref_embs in enumerate(second_db):
                 # cm[i, j] = self.ed_between_two_sentences(sent_embs, sent_ref_embs) # WED algorithm, slow
-                ss = self.semantic_similarity(sent_embs, sent_ref_embs, self.word_probs_db[i], self.word_probs_db[j])
-                # wos = self.word_order_similarity(self.tokenized_sents[i], self.tokenized_sents[j])
-                cm[i, j] = self.sigma * ss # + (1 - self.sigma) * wos
+                ss = self.semantic_similarity(sent_embs, sent_ref_embs)
+                wos = self.word_order_similarity(self.tokenized_questions[i], second_tokenized[j])
+                cm[i, j] = self.sigma * ss + (1 - self.sigma) * wos
 
-        np.fill_diagonal(cm, -np.inf)
-
-        am = np.argsort(cm, axis=1)[:, -1]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
-        hits = cls_ids == cls_ids[am]
+        if not with_answers:
+            np.fill_diagonal(cm, -np.inf)
+            am = np.argsort(cm, axis=1)[:, -1]
+            hits = cls_ids == cls_ids[am]
+        else:
+            predictions = np.argsort(cm, axis=1)[:, -1] # class for each question
+            hits = cls_ids == predictions
         acc = hits.mean()
         return acc
+
+
 
     def semantic_similarity(self, sent_embs1, sent_embs2, s1_probs=1, s2_probs=1):
         

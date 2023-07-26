@@ -11,6 +11,7 @@ class Robeczech(): # RoBERTa architecrute
                  ):
         self.tokenizer = RobertaTokenizer.from_pretrained("ufal/robeczech-base")
         self.model = RobertaModel.from_pretrained("ufal/robeczech-base")
+        # self.qa_model = RobertaForQuestionAnswering.from_pretrained("ufal/robeczech-base")
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.model = self.model.to(self.device)
         # print(self.model)
@@ -49,3 +50,6 @@ class Robeczech(): # RoBERTa architecrute
             return embedding / np.linalg.norm(embedding)
         else:
             return embedding # return n word embeddings
+ 
+
+

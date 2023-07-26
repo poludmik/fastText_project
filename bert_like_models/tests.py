@@ -17,3 +17,25 @@ emb2 = model.encode(text2)
 print(emb2.shape)
 
 print("Cosine:", emb @ emb2)
+
+
+
+
+
+
+# There are max ~350 tokens in an answer
+# import pandas as pd
+# path_to_a = "upv_faq/data/FAQ76_answers.xlsx"
+
+# df = pd.read_excel(path_to_a)
+# column_data = df['answer'].tolist()
+# max_len = 0
+# max_a = ""
+# for row in column_data:
+#     if len(row.split()) > max_len:
+#         max_len = len(row.split())
+#         max_a = row.split()
+# print(max_len)
+# print(max_a)
+
+
