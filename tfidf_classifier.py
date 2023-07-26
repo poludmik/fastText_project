@@ -105,4 +105,15 @@ class TFIDF_Classifier:
                 right_n += 1
         print("Got right:", right_n / len(test_list))
 
+    def most_important_words(self, top_n):
+        c_most = np.argsort(self.TFIDF_matrix.toarray(), axis=1)[:, -top_n:]
+        classes = []
+        for n in c_most:
+            one_class_str = ""
+            for i in n:
+                one_class_str += " " + self.feature_names[i]
+            classes.append(one_class_str)
+
+        df = pd.DataFrame({"answer": classes, "class":list(range(c_most.shape[0]))})
+        df.to_excel("data_preprocessing/keywords_from_q.xlsx")
 

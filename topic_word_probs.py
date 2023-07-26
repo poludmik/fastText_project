@@ -10,6 +10,9 @@ import numpy as np
 
 from cs_lemmatizer import *
 
+from keybert import KeyBERT
+
+
 
 def remove_tags():
     ans_df = pd.read_excel("Q78_answers.xlsx")
@@ -119,10 +122,38 @@ def histogram_of_words(dict_of_probs, number_of_words):
     plt.savefig('780_upv_questions/word_counts.png')
 
 
+def get_weights_with_KeyBERT(structured_q: list[str], sw=False, lm=False, path_to_save=None):
+    weights = {}
+    kw_model = KeyBERT(model="paraphrase-multilingual-MiniLM-L12-v2")
+    for c_str in structured_q:
+        tmp_c = " ".join(LMTZR.clean_corpus(c_str, rm_stop_words=sw, lemm=lm))
+        keywords = kw_model.extract_keywords(tmp_c, keyphrase_ngram_range=(1, 2), 
+                                     use_mmr=True, 
+                                     diversity=0.5,
+                                     top_n=3,
+                                     )
+        for s, p in keywords:
+            if p <= 0:
+                continue
+            tmp_s = LMTZR.clean_corpus(s) # lm and sw aready cleaned up
+            for w in tmp_s:
+                if w not in weights:
+                    weights[w] = p
+                else:
+                    if p > weights[w]:
+                        weights[w] = p
+
+    if path_to_save:
+        with open(path_to_save, "w") as f:
+            json.dump(weights, f)
+                
+    return weights
+
+
 
 
 if __name__ == "__main__":
-    #remove_tags()
+    # remove_tags()
     # count_word_probs_in_answers()
     # count_word_probs_in_questions()
     pass

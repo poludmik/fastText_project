@@ -75,8 +75,8 @@ class WEED(FAQ):
             for j, sent_ref_embs in enumerate(second_db):
                 # cm[i, j] = self.ed_between_two_sentences(sent_embs, sent_ref_embs) # WED algorithm, slow
                 ss = self.semantic_similarity(sent_embs, sent_ref_embs)
-                wos = self.word_order_similarity(self.tokenized_questions[i], second_tokenized[j])
-                cm[i, j] = self.sigma * ss + (1 - self.sigma) * wos
+                # wos = self.word_order_similarity(self.tokenized_questions[i], second_tokenized[j])
+                cm[i, j] = self.sigma * ss # + (1 - self.sigma) * wos
 
         cls_ids = self.questions["class"].to_numpy(dtype=int)
         if not with_answers:
