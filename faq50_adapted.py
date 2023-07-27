@@ -220,10 +220,12 @@ class FAQ:
         # Would be better with np.fill_diagonal, but due to ambiguous questions, 
         # some might have similarity bigger with another question; shouldn't really matter.
         # np.fill_diagonal(cm, np.inf) 
-
+        t = 0.85
+        # lower_than_thresh = np.sort(cm, axis=1)[:, -2] < t
+        print(f"Don't know with threshold {t} are {np.sum(np.sort(cm, axis=1)[:, -2] < t)} questions.")
         am = np.argsort(cm, axis=1)[:, -2]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
-        hits = cls_ids == cls_ids[am]
+        hits = (cls_ids == cls_ids[am]) # + lower_than_thresh
         acc = hits.mean()
 
         # Second nearest neighbour
@@ -281,9 +283,11 @@ class FAQ:
             return acc, fig
         return acc, None
 
-    def identify(self, question):
+    def identify(self, question, thld=0):
         v = self.sentence_embedding(question)
         sims = self.db @ v[:, np.newaxis]
+        if np.max(sims) < thld: # answer don't know
+            return -1
         return np.argmax(sims)
     
     def identify_direct_answer(self, question):
@@ -291,8 +295,11 @@ class FAQ:
         a_sims = self.ans_db @ v[:, np.newaxis]
         return np.argmax(a_sims)
     
-    def match(self, question):
-        matched_q = self.questions['question'][self.identify(question)]
+    def match(self, question, idk_threshold=0):
+        idx = self.identify(question, thld=idk_threshold)
+        if idx == -1:
+            return "Don't know", -1
+        matched_q = self.questions['question'][idx]
         #print(f"Matched question: {matched_q}")
         return matched_q, self.questions['class'][self.identify(question)]
 

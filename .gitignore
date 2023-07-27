@@ -32,3 +32,5 @@ bert_like_models/__pycache__/slavic_bert_tests.cpython-310.pyc
 topic_word_probs.py
 bert_like_models/__pycache__/robeczech.cpython-310.pyc
 bert_like_models/__pycache__/bert_base.cpython-310.pyc
+faq50_adapted.py
+.gitignore
