@@ -34,3 +34,5 @@ bert_like_models/__pycache__/robeczech.cpython-310.pyc
 bert_like_models/__pycache__/bert_base.cpython-310.pyc
 faq50_adapted.py
 .gitignore
+.idea/workspace.xml
+bert_like_models/__pycache__/keybert.cpython-310.pyc

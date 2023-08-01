@@ -220,9 +220,11 @@ class FAQ:
         # Would be better with np.fill_diagonal, but due to ambiguous questions, 
         # some might have similarity bigger with another question; shouldn't really matter.
         # np.fill_diagonal(cm, np.inf) 
-        t = 0.85
-        # lower_than_thresh = np.sort(cm, axis=1)[:, -2] < t
-        print(f"Don't know with threshold {t} are {np.sum(np.sort(cm, axis=1)[:, -2] < t)} questions.")
+        # t = 0.013
+        # # lower_than_thresh = np.sort(cm, axis=1)[:, -2] < t
+        # n_last = 20
+        # lower_than_thresh = np.max(np.gradient(np.sort(cm, axis=1), axis=1)[:, -n_last:-1], axis=1) < t
+        # print(f"Don't know with threshold < {t} are {np.sum(lower_than_thresh)} questions.")
         am = np.argsort(cm, axis=1)[:, -2]
         cls_ids = self.questions["class"].to_numpy(dtype=int)
         hits = (cls_ids == cls_ids[am]) # + lower_than_thresh
@@ -286,6 +288,10 @@ class FAQ:
     def identify(self, question, thld=0):
         v = self.sentence_embedding(question)
         sims = self.db @ v[:, np.newaxis]
+        # n_last = 100
+        # sorted = np.squeeze(np.flip(np.sort(sims)))
+        # if np.max(np.gradient(sorted)[-n_last:]) < thld:
+        #     return -1
         if np.max(sims) < thld: # answer don't know
             return -1
         return np.argmax(sims)
