@@ -149,12 +149,12 @@ class FAQ:
         # Click a pixel to print out aditional info about the matching question pair
         cm = self.db @ self.db.T
         am = np.argmax(cm, axis=1)
-        # for i in range(am.shape[0]):
-        #     if am[i] != i:
-        #         print("Ambiguous match:")
-        #         print(self.questions["question"][i], i, self.questions["class"][i])
-        #         print(self.questions["question"][am[i]], am[i], self.questions["class"][am[i]])
-        #         print()
+        for i in range(am.shape[0]):
+            if am[i] != i:
+                print("Ambiguous match:")
+                print(self.questions["question"][i], i, self.questions["class"][i])
+                print(self.questions["question"][am[i]], am[i], self.questions["class"][am[i]])
+                print()
 
         def onclick(event):
             if event.xdata is None or event.ydata is None:
@@ -333,15 +333,15 @@ class FAQ:
         dict_question2classes = {}
         print("Same question with different classes:")
         for i in range(am.shape[0]):
-            if am[i] != i:
-                if self.questions["question"][i] not in dict_question2classes:
-                    dict_question2classes[self.questions["question"][i]] = []
-                if str(self.questions["class"][i]) not in dict_question2classes[self.questions["question"][i]]:
-                    dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][i]))
-                if str(self.questions["class"][am[i]]) not in dict_question2classes[self.questions["question"][i]]:
-                    dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][am[i]]))
-                print("\nQ:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
-                print("Q_argmax:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
+            if am[i] != i and self.questions["class"][i] != self.questions["class"][am[i]]:
+                # if self.questions["question"][i] not in dict_question2classes:
+                #     dict_question2classes[self.questions["question"][i]] = []
+                # if str(self.questions["class"][i]) not in dict_question2classes[self.questions["question"][i]]:
+                #     dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][i]))
+                # if str(self.questions["class"][am[i]]) not in dict_question2classes[self.questions["question"][i]]:
+                #     dict_question2classes[self.questions["question"][i]].append(str(self.questions["class"][am[i]]))
+                print("\nQ1:", self.questions["question"][i], "It's idx=", i, ", true_class=", self.questions["class"][i])
+                print("Q2:", self.questions["question"][am[i]], "It's idx= ", am[i], ", true_class=",self.questions["class"][am[i]])
         
         if save_path is not None:
             json_data = json.dumps(dict_question2classes)

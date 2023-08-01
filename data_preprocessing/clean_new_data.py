@@ -8,7 +8,7 @@ def remove_tags(sent):
 
 
 if __name__ == "__main__":
-    new_data_raw = "./new_questions/Copy_of_data2_upv_changes.xlsx"
+    new_data_raw = "./new_questions/V3_Copy_of_data2_upv_changes_raw.xlsx"
 
     df = pd.read_excel(new_data_raw)
 
@@ -31,5 +31,5 @@ if __name__ == "__main__":
     q_data = pd.DataFrame.from_records(q_json)
     a_data = pd.DataFrame.from_records(a_json)
 
-    q_data.to_excel("./new_questions/Q78_questions_new.xlsx")
-    a_data.to_excel("./new_questions/Q78_answers_new.xlsx")
+    q_data.to_excel("./new_questions/M_Q76_questions_V3.xlsx")
+    a_data.to_excel("./new_questions/M_Q76_answers_V3.xlsx")

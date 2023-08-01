@@ -12,7 +12,8 @@ class LMTZR:
     
     @staticmethod
     def tokenize(sentence):
-        return simple_tokenizer(sentence)
+        return simple_tokenizer(sentence.lower())
+        # return sentence.lower().replace('\n', ' ').split()
 
     @staticmethod
     def remove_stop_words_from_sentence(sent_list: list[str]):
