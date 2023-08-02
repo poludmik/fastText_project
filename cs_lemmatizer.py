@@ -2,7 +2,8 @@ import simplemma
 from simplemma import simple_tokenizer
 from stop_words import get_stop_words
 
-
+exclusion_list = ["kdo", "jak", "kolik", "co", "proč", "hodně", "který", "mezi", "chtít", "jeden", "mít",
+                  "proti", "kde", "nebo", "kdy", "bez"]
 
 class LMTZR:
 
@@ -17,7 +18,7 @@ class LMTZR:
 
     @staticmethod
     def remove_stop_words_from_sentence(sent_list: list[str]):
-        return [w for w in sent_list if w not in get_stop_words('cz')]
+        return [w for w in sent_list if w not in get_stop_words('cz') or w in exclusion_list]
     
     @staticmethod
     def clean_corpus(corpus: str, rm_stop_words=True, lemm=True):
