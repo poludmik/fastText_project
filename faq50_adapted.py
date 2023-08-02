@@ -68,7 +68,6 @@ class FAQ:
             self.get_w_vec = self.model.get_word_vector
 
         if questions_path.split(".")[1] == "xlsx":
-            
             self.questions = pd.read_excel(questions_path)
         elif questions_path.split(".")[1] == "csv":
             self.questions = pd.read_csv(questions_path, sep="\t")
@@ -496,3 +495,32 @@ class FAQ:
         return round(hits.mean(), 3), round(hits2.mean(), 3)
     # , diff_prediction_right/len(self.questions)
 
+    def test_between_two_datasets(self, tren_dataset_path, test_dataset_path):
+        
+        questions_tren = pd.read_excel(tren_dataset_path)
+        questions_test = pd.read_excel(test_dataset_path)
+
+        db_tren = np.array([self.sentence_embedding(q) for q in questions_tren["question"]])
+        db_test = np.array([self.sentence_embedding(q) for q in questions_test["question"]])
+        print("Training embeddings:", db_tren.shape,"\nTesting embeddings:", db_test.shape)
+        cm = db_test @ db_tren.T
+        am = np.argsort(cm, axis=1)[:, -1]
+        cls_ids_tren = questions_tren["class"].to_numpy(dtype=int)
+        cls_ids_test = questions_test["class"].to_numpy(dtype=int)
+        hits = (cls_ids_test == cls_ids_tren[am])
+        acc_cross = hits.mean()
+        
+        mean_db_tren = np.zeros([questions_tren["class"].nunique(), db_tren.shape[1]])
+        for i, cls in enumerate(questions_tren["class"].unique()):
+            imin = questions_tren[questions_tren["class"] == cls].index.min()
+            imax = questions_tren[questions_tren["class"] == cls].index.max()
+            mean_db_tren[i, :] = db_tren[imin:imax+1, :].mean(axis=0)
+        cm = db_test @ mean_db_tren.T
+        preds = np.argmax(cm, axis=1)
+        gts = questions_test["class"].to_numpy(dtype=int)
+        hits = preds == gts
+        acc_mean = hits.mean()
+
+        return round(acc_cross, 3), round(acc_mean, 3)
+
+        
